@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,7 +62,7 @@ val CATEGORIES = listOf(
     "Pendidikan & Sekolah"
 )
 
-val MOOD_EMOJIS = listOf("💔", "🥹", "🌧️", "✨", "❤️‍🔥", "🌿", "🎓")
+val MOOD_EMOJIS = listOf("💔", "🥹", "🌧️", "✨", "❤️‍🔥", "🌿", "🎓", "😴", "🫠", "🥳", "🩹", "🌊", "🧸", "☕", "🕊️")
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -125,18 +127,18 @@ fun AddNoteDialog(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    MOOD_EMOJIS.forEach { emoji ->
+                    items(MOOD_EMOJIS) { emoji ->
                         val isSelected = selectedEmoji == emoji
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) PastelLavender.copy(alpha = 0.3f)
+                                    if (isSelected) PastelLavender.copy(alpha = 0.35f)
                                     else MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 .border(
@@ -147,7 +149,7 @@ fun AddNoteDialog(
                                 .clickable { selectedEmoji = emoji },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = emoji, fontSize = 20.sp)
+                            Text(text = emoji, fontSize = 22.sp)
                         }
                     }
                 }

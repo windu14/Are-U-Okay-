@@ -60,11 +60,14 @@ fun SongCard(
     playerState: AudioPlayerState,
     onPlayClick: () -> Unit,
     modifier: Modifier = Modifier,
+    cardId: String? = null,    // Unique identifier for note card / item to avoid duplicate playing indicators
     attachCount: Int? = null, // For Top 3 songs badge
     rankIndex: Int? = null,   // 1, 2, 3 rank
     onAttachClick: (() -> Unit)? = null // Optional attach button in search sheet
 ) {
-    val isCurrentTrack = playerState.currentPreviewUrl == previewUrl
+    val matchesUrl = playerState.currentPreviewUrl == previewUrl
+    val matchesCard = cardId == null || playerState.activeCardId == null || playerState.activeCardId == cardId
+    val isCurrentTrack = matchesUrl && matchesCard
     val isPlaying = isCurrentTrack && playerState.isPlaying
     val isBuffering = isCurrentTrack && playerState.isBuffering
 

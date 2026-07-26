@@ -42,7 +42,7 @@ import java.util.Locale
 fun NoteCard(
     note: JournalNote,
     playerState: AudioPlayerState,
-    onPlayTrackClick: (String, String, String, String?) -> Unit,
+    onPlayTrackClick: (previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String?) -> Unit,
     onDeleteClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -52,6 +52,8 @@ fun NoteCard(
         "Perjalanan Jati Diri" -> PastelLavender
         else -> MaterialTheme.colorScheme.tertiary
     }
+
+    val noteCardId = "note_${note.id}"
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -140,12 +142,14 @@ fun NoteCard(
                     artworkUrl = note.artworkUrl,
                     previewUrl = note.previewUrl,
                     playerState = playerState,
+                    cardId = noteCardId,
                     onPlayClick = {
                         onPlayTrackClick(
                             note.previewUrl,
                             note.trackName,
                             note.artistName,
-                            note.artworkUrl
+                            note.artworkUrl,
+                            noteCardId
                         )
                     }
                 )

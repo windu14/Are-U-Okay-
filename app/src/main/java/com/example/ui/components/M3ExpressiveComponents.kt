@@ -36,6 +36,7 @@ import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,27 +45,74 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelRose
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpressiveLoadingIndicator(
     modifier: Modifier = Modifier,
     text: String = "Memuat lagu dari iTunes..."
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "expressive_loading")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
+    )
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(48.dp),
-            color = PastelLavender,
-            strokeWidth = 4.dp
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(72.dp)
+        ) {
+            // Expressive Glowing Background Ring
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .scale(pulseScale)
+                    .background(
+                        color = PastelLavender.copy(alpha = 0.25f),
+                        shape = CircleShape
+                    )
+            )
+
+            CircularProgressIndicator(
+                modifier = Modifier.size(44.dp),
+                color = PastelLavender,
+                trackColor = PastelRose.copy(alpha = 0.3f),
+                strokeWidth = 4.dp
+            )
+
+            Icon(
+                imageVector = Icons.Filled.MusicNote,
+                contentDescription = null,
+                tint = PastelRose,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

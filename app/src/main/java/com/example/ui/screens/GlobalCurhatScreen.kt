@@ -47,7 +47,7 @@ fun GlobalCurhatScreen(
     selectedCategory: String,
     playerState: AudioPlayerState,
     onCategorySelect: (String) -> Unit,
-    onPlayTrackClick: (String, String, String, String?) -> Unit,
+    onPlayTrackClick: (previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String?) -> Unit,
     onDeleteNoteClick: (Int) -> Unit,
     onOpenAddNote: () -> Unit,
     onOpenMusicSearch: () -> Unit,
@@ -148,7 +148,7 @@ fun GlobalCurhatScreen(
             onAddMusicClick = onOpenMusicSearch,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 80.dp, end = 20.dp)
+                .padding(bottom = 16.dp, end = 16.dp)
         )
     }
 }

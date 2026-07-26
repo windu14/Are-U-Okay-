@@ -183,8 +183,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     topSongs = topSongs,
                     recentNotes = recentNotes,
                     playerState = playerState,
-                    onPlayTrackClick = { url, title, artist, art ->
-                        viewModel.playTrackPreview(url, title, artist, art)
+                    onPlayTrackClick = { url, title, artist, art, cardId ->
+                        viewModel.playTrackPreview(url, title, artist, art, cardId)
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { viewModel.openAddNoteDialog() },
@@ -196,8 +196,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     selectedCategory = selectedCategory,
                     playerState = playerState,
                     onCategorySelect = { cat -> viewModel.setCategoryFilter(cat) },
-                    onPlayTrackClick = { url, title, artist, art ->
-                        viewModel.playTrackPreview(url, title, artist, art)
+                    onPlayTrackClick = { url, title, artist, art, cardId ->
+                        viewModel.playTrackPreview(url, title, artist, art, cardId)
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { viewModel.openAddNoteDialog() },
@@ -228,8 +228,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     searchError = searchError,
                     playerState = playerState,
                     onQueryChange = { q -> viewModel.updateSearchQuery(q) },
-                    onPlayTrackClick = { url, title, artist, art ->
-                        viewModel.playTrackPreview(url, title, artist, art)
+                    onPlayTrackClick = { url, title, artist, art, cardId ->
+                        viewModel.playTrackPreview(url, title, artist, art, cardId)
                     },
                     onSelectTrack = { track ->
                         viewModel.selectTrackForNote(track)

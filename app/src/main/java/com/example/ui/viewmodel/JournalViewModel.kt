@@ -143,8 +143,8 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         _showSearchMusicSheet.value = false
     }
 
-    fun playTrackPreview(previewUrl: String, title: String, artist: String, artworkUrl: String?) {
-        audioPlayer.playPreview(previewUrl, title, artist, artworkUrl)
+    fun playTrackPreview(previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String? = null) {
+        audioPlayer.playPreview(previewUrl, title, artist, artworkUrl, cardId)
     }
 
     fun addNote(content: String, category: String, moodEmoji: String) {

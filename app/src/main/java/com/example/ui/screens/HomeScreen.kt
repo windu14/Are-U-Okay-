@@ -54,7 +54,7 @@ fun HomeScreen(
     topSongs: List<SongFrequency>,
     recentNotes: List<JournalNote>,
     playerState: AudioPlayerState,
-    onPlayTrackClick: (String, String, String, String?) -> Unit,
+    onPlayTrackClick: (previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String?) -> Unit,
     onDeleteNoteClick: (Int) -> Unit,
     onOpenAddNote: () -> Unit,
     onOpenMusicSearch: () -> Unit,
@@ -217,6 +217,7 @@ fun HomeScreen(
         }
 
         itemsIndexed(topSongs, key = { _, item -> item.trackId }) { index, song ->
+            val topCardId = "top_${song.trackId}"
             Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 SongCard(
                     trackName = song.trackName,
@@ -224,6 +225,7 @@ fun HomeScreen(
                     artworkUrl = song.artworkUrl,
                     previewUrl = song.previewUrl,
                     playerState = playerState,
+                    cardId = topCardId,
                     rankIndex = index + 1,
                     attachCount = song.frequency,
                     onPlayClick = {
@@ -231,7 +233,8 @@ fun HomeScreen(
                             song.previewUrl,
                             song.trackName,
                             song.artistName,
-                            song.artworkUrl
+                            song.artworkUrl,
+                            topCardId
                         )
                     }
                 )

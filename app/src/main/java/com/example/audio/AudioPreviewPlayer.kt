@@ -19,6 +19,7 @@ data class AudioPlayerState(
     val trackTitle: String? = null,
     val artistName: String? = null,
     val artworkUrl: String? = null,
+    val activeCardId: String? = null, // e.g. "note_12", "top_101", "search_202"
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,
     val progress: Float = 0f, // 0.0 to 1.0
@@ -36,11 +37,13 @@ class AudioPreviewPlayer(private val context: Context) {
     private val _playerState = MutableStateFlow(AudioPlayerState())
     val playerState: StateFlow<AudioPlayerState> = _playerState.asStateFlow()
 
-    fun playPreview(previewUrl: String, title: String, artist: String, artworkUrl: String?) {
+    fun playPreview(previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String? = null) {
         if (previewUrl.isBlank()) return
 
-        // If clicking same preview URL, toggle pause/play
-        if (_playerState.value.currentPreviewUrl == previewUrl && mediaPlayer != null) {
+        // If clicking same preview URL AND same cardId (or no cardId specified), toggle pause/play
+        if (_playerState.value.currentPreviewUrl == previewUrl &&
+            (_playerState.value.activeCardId == cardId || cardId == null) &&
+            mediaPlayer != null) {
             if (_playerState.value.isPlaying) {
                 pause()
             } else {
@@ -58,6 +61,7 @@ class AudioPreviewPlayer(private val context: Context) {
                 trackTitle = title,
                 artistName = artist,
                 artworkUrl = artworkUrl,
+                activeCardId = cardId,
                 isPlaying = false,
                 isBuffering = true
             )

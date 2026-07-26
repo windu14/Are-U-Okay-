@@ -45,7 +45,7 @@ fun SearchMusicSheet(
     searchError: String?,
     playerState: AudioPlayerState,
     onQueryChange: (String) -> Unit,
-    onPlayTrackClick: (String, String, String, String?) -> Unit,
+    onPlayTrackClick: (previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String?) -> Unit,
     onSelectTrack: (ITunesTrack) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -155,12 +155,14 @@ fun SearchMusicSheet(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(searchResults, key = { it.trackId }) { track ->
+                            val searchCardId = "search_${track.trackId}"
                             SongCard(
                                 trackName = track.trackName ?: "Unknown Track",
                                 artistName = track.artistName ?: "Unknown Artist",
                                 artworkUrl = track.highResArtworkUrl ?: track.artworkUrl100,
                                 previewUrl = track.previewUrl,
                                 playerState = playerState,
+                                cardId = searchCardId,
                                 onPlayClick = {
                                     val url = track.previewUrl
                                     if (!url.isNullOrEmpty()) {
@@ -168,7 +170,8 @@ fun SearchMusicSheet(
                                             url,
                                             track.trackName ?: "",
                                             track.artistName ?: "",
-                                            track.highResArtworkUrl ?: track.artworkUrl100
+                                            track.highResArtworkUrl ?: track.artworkUrl100,
+                                            searchCardId
                                         )
                                     }
                                 },
