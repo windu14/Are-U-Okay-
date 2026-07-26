@@ -1,0 +1,6 @@
+{
+  "name": "Are You Okay?",
+  "description": "A safe space for Gen Z and youth to journal life, romance, and self-discovery with attached iTunes music previews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
