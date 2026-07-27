@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.audio.AudioPreviewPlayer
@@ -12,6 +13,7 @@ import com.example.data.remote.ITunesApiService
 import com.example.data.remote.ITunesTrack
 import com.example.data.repository.JournalRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,9 +24,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+import com.example.data.local.AiChatMessage
+import com.example.data.remote.GeminiApiService
+import com.example.data.remote.GeminiMessage
+
 class JournalViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: JournalRepository
+    private val geminiApiService = GeminiApiService()
     val audioPlayer: AudioPreviewPlayer
 
     init {
@@ -33,10 +40,12 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         repository = JournalRepository(db.journalNoteDao(), api)
         audioPlayer = AudioPreviewPlayer(application)
 
-        // Pre-seed sample notes if DB is empty
-        viewModelScope.launch {
-            if (repository.allNotes.first().isEmpty()) {
-                seedInitialNotes()
+        // Clear dummy seed data once so DB starts clean
+        val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("dummy_data_cleared_v2", false)) {
+            viewModelScope.launch {
+                repository.clearAllNotes()
+                prefs.edit().putBoolean("dummy_data_cleared_v2", true).apply()
             }
         }
     }
@@ -46,7 +55,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     val allNotes: StateFlow<List<JournalNote>> = repository.allNotes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentNotes: StateFlow<List<JournalNote>> = repository.getRecentNotes(2)
+    val recentNotes: StateFlow<List<JournalNote>> = repository.getRecentNotes(4)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val topSongs: StateFlow<List<SongFrequency>> = repository.getTopAttachedSongs(3)
@@ -160,6 +169,63 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    // Gemini AI Chat State
+    private val _aiMessages = MutableStateFlow<List<AiChatMessage>>(emptyList())
+    val aiMessages: StateFlow<List<AiChatMessage>> = _aiMessages.asStateFlow()
+
+    private val _isAiThinking = MutableStateFlow(false)
+    val isAiThinking: StateFlow<Boolean> = _isAiThinking.asStateFlow()
+
+    private val _aiErrorMessage = MutableStateFlow<String?>(null)
+    val aiErrorMessage: StateFlow<String?> = _aiErrorMessage.asStateFlow()
+
+    fun sendAiMessage(prompt: String) {
+        if (prompt.isBlank()) return
+        val userMsg = AiChatMessage(text = prompt, isUser = true)
+        val updatedList = _aiMessages.value + userMsg
+        _aiMessages.value = updatedList
+
+        _isAiThinking.value = true
+        _aiErrorMessage.value = null
+
+        viewModelScope.launch {
+            val minThinkingDelay = async { delay(3000L) } // 3 detik AI berpikir
+
+            // Build GeminiMessage list for API history
+            val history = updatedList.dropLast(1).map {
+                GeminiMessage(role = if (it.isUser) "user" else "model", text = it.text)
+            }
+
+            val result = geminiApiService.sendMessage(history, prompt)
+            
+            minThinkingDelay.await() // Pastikan durasi berpikir minimal 3 detik
+            _isAiThinking.value = false
+
+            result.onSuccess { responseText ->
+                val aiMsg = AiChatMessage(text = responseText, isUser = false)
+                _aiMessages.value = _aiMessages.value + aiMsg
+            }.onFailure { err ->
+                _aiErrorMessage.value = err.message ?: "Terjadi kesalahan saat menghubungi Teman AI."
+            }
+        }
+    }
+
+    fun clearAiChat() {
+        _aiMessages.value = emptyList()
+        _aiErrorMessage.value = null
+    }
+
+    fun saveAiResponseToJournal(content: String, category: String = "Perjalanan Jati Diri", moodEmoji: String = "✨") {
+        viewModelScope.launch {
+            repository.addNote(
+                content = content,
+                category = category,
+                moodEmoji = moodEmoji,
+                selectedTrack = _selectedTrack.value
+            )
+        }
+    }
+
     fun deleteNote(id: Int) {
         viewModelScope.launch {
             repository.deleteNote(id)
@@ -169,60 +235,5 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     override fun onCleared() {
         super.onCleared()
         audioPlayer.release()
-    }
-
-    private suspend fun seedInitialNotes() {
-        // Gen Z & youth relatable initial curhat sample notes with popular songs
-        val sample1 = ITunesTrack(
-            trackId = 14352101,
-            trackName = "Evaluasi",
-            artistName = "Hindia",
-            artworkUrl100 = "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/a5/d2/2b/a5d22bfb-090d-f215-d72b-8b548b2bf318/193483984185.jpg/100x100bb.jpg",
-            previewUrl = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/4a/01/fa/4a01fa4e-6e2c-3a2c-f608-410a56f642df/mzaf_10523214589094770258.plus.aac.p.m4a"
-        )
-
-        val sample2 = ITunesTrack(
-            trackId = 15421902,
-            trackName = "Secukupnya",
-            artistName = "Hindia",
-            artworkUrl100 = "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/e2/0b/4f/e20b4f8a-98bb-7f8e-4a61-8418bf34a71a/193483984192.jpg/100x100bb.jpg",
-            previewUrl = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/a8/f5/83/a8f5835e-c045-8167-33f7-92e59e198b1b/mzaf_6285217482937402839.plus.aac.p.m4a"
-        )
-
-        val sample3 = ITunesTrack(
-            trackId = 16210088,
-            trackName = "Nanti Kita Terbit",
-            artistName = "Sal Priadi",
-            artworkUrl100 = "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/80/7e/0b/807e0b11-5360-1e56-1188-4a112f43e110/198000109923.jpg/100x100bb.jpg",
-            previewUrl = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/33/21/f8/3321f82b-8b41-9428-1b0b-932f91a18274/mzaf_1381273912048912837.plus.aac.p.m4a"
-        )
-
-        repository.addNote(
-            content = "Lagi ngerasa overthinking banget soal masa depan & tugas kuliah yang gak selesai-selesai... Semoga besok hari bisa lebih bersahabat.",
-            category = "Pendidikan & Sekolah",
-            moodEmoji = "🥹",
-            selectedTrack = sample1
-        )
-
-        repository.addNote(
-            content = "Gak tau kenapa hari ini kangen sama sesosok orang yang udah gak pernah cerita lagi. Sedih tapi harus tetap jalanin hari.",
-            category = "Asmara & Cinta",
-            moodEmoji = "💔",
-            selectedTrack = sample2
-        )
-
-        repository.addNote(
-            content = "Lagi belajar untuk mencintai proses bertumbuh. Nggak apa-apa pelan-pelan, yang penting nggak nyerah sama keadaan.",
-            category = "Perjalanan Jati Diri",
-            moodEmoji = "✨",
-            selectedTrack = sample1
-        )
-
-        repository.addNote(
-            content = "Hari ini lumayan melelahkan, tapi dengerin lagu ini bikin suasana terasa lebih hangat.",
-            category = "Masalah Hidup",
-            moodEmoji = "🌧️",
-            selectedTrack = sample3
-        )
     }
 }

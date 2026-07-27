@@ -34,6 +34,7 @@ import com.example.data.local.JournalNote
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
+import com.example.ui.theme.PlayfairRegularFamily
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -126,6 +127,7 @@ fun NoteCard(
                 )
                 Text(
                     text = note.content,
+                    fontFamily = PlayfairRegularFamily,
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 22.sp,
                     color = MaterialTheme.colorScheme.onSurface,

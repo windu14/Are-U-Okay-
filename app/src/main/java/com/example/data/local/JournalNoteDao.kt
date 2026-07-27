@@ -34,4 +34,7 @@ interface JournalNoteDao {
 
     @Query("DELETE FROM journal_notes WHERE id = :id")
     suspend fun deleteNoteById(id: Int)
+
+    @Query("DELETE FROM journal_notes")
+    suspend fun clearAllNotes()
 }

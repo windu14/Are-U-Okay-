@@ -54,4 +54,8 @@ class JournalRepository(
     suspend fun deleteNote(id: Int) {
         journalNoteDao.deleteNoteById(id)
     }
+
+    suspend fun clearAllNotes() {
+        journalNoteDao.clearAllNotes()
+    }
 }

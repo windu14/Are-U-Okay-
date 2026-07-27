@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
@@ -72,6 +73,7 @@ import coil.decode.SvgDecoder
 import com.example.audio.AudioPlayerState
 import com.example.ui.components.AddNoteDialog
 import com.example.ui.components.SearchMusicSheet
+import com.example.ui.screens.AiChatScreen
 import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.TentangScreen
@@ -98,7 +100,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppScreen(viewModel: JournalViewModel) {
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Global Curhat, 2: Tentang
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Teman AI, 2: Global Curhat, 3: Tentang
     var isScreenLoading by remember { mutableStateOf(false) }
 
     val onSelectTab: (Int) -> Unit = { target ->
@@ -110,7 +112,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
 
     LaunchedEffect(isScreenLoading) {
         if (isScreenLoading) {
-            delay(3000L)
+            delay(1500L)
             isScreenLoading = false
         }
     }
@@ -131,6 +133,10 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     val showAddNoteDialog by viewModel.showAddNoteDialog.collectAsStateWithLifecycle()
     val showSearchMusicSheet by viewModel.showSearchMusicSheet.collectAsStateWithLifecycle()
     val selectedTrack by viewModel.selectedTrack.collectAsStateWithLifecycle()
+
+    val aiMessages by viewModel.aiMessages.collectAsStateWithLifecycle()
+    val isAiThinking by viewModel.isAiThinking.collectAsStateWithLifecycle()
+    val aiErrorMessage by viewModel.aiErrorMessage.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -153,7 +159,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
                 }
 
-                // 3 Screen Bottom Navigation Bar
+                // 4 Screen Bottom Navigation Bar
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp
@@ -175,8 +181,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     NavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = { onSelectTab(1) },
-                        icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
-                        label = { Text("Global Curhat", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "Teman AI") },
+                        label = { Text("Teman AI", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color(0xFF261833),
                             selectedTextColor = PastelLavender,
@@ -189,8 +195,22 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     NavigationBarItem(
                         selected = selectedTab == 2,
                         onClick = { onSelectTab(2) },
+                        icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
+                        label = { Text("Global Curhat", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color(0xFF261833),
+                            selectedTextColor = PastelLavender,
+                            indicatorColor = PastelLavender,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+
+                    NavigationBarItem(
+                        selected = selectedTab == 3,
+                        onClick = { onSelectTab(3) },
                         icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
-                        label = { Text("Tentang", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text("Tentang", fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color(0xFF261833),
                             selectedTextColor = PastelLavender,
@@ -221,7 +241,19 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
                 )
 
-                1 -> GlobalCurhatScreen(
+                1 -> AiChatScreen(
+                    messages = aiMessages,
+                    isThinking = isAiThinking,
+                    errorMessage = aiErrorMessage,
+                    onSendMessage = { prompt -> viewModel.sendAiMessage(prompt) },
+                    onClearChat = { viewModel.clearAiChat() },
+                    onSaveToNote = { content, category, moodEmoji ->
+                        viewModel.saveAiResponseToJournal(content, category, moodEmoji)
+                    },
+                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
+                )
+
+                2 -> GlobalCurhatScreen(
                     notes = filteredNotes,
                     selectedCategory = selectedCategory,
                     playerState = playerState,
@@ -234,7 +266,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
                 )
 
-                2 -> TentangScreen()
+                3 -> TentangScreen()
             }
 
             // Screen Transition Loading Overlay (4 Seconds)

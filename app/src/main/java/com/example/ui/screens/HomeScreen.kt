@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MusicNote
@@ -29,6 +32,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,6 +48,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +57,9 @@ import androidx.compose.runtime.remember
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import com.example.R
 import com.example.audio.AudioPlayerState
 import com.example.data.local.JournalNote
@@ -61,10 +69,14 @@ import com.example.ui.components.SongCard
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
+import com.example.ui.theme.PlayfairBoldFamily
+import com.example.ui.theme.PlayfairMediumItalicFamily
+import com.example.ui.theme.PlayfairRegularFamily
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-private val playfairBoldFamily = FontFamily(Font(R.font.playfairdisplay_bold, FontWeight.Bold))
-private val playfairMediumItalicFamily = FontFamily(Font(R.font.playfairdisplay_mediumitalic, FontWeight.Medium, FontStyle.Italic))
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     topSongs: List<SongFrequency>,
@@ -185,7 +197,7 @@ fun HomeScreen(
 
                     Text(
                         text = "are you okay? 💜",
-                        fontFamily = playfairBoldFamily,
+                        fontFamily = PlayfairBoldFamily,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = PastelLavender
@@ -193,7 +205,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Nggak apa-apa kalau hari ini terasa berat. Tempat amanmu untuk tumpahkan rasa & dengar lagu impian.",
-                        fontFamily = playfairMediumItalicFamily,
+                        fontFamily = PlayfairMediumItalicFamily,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
@@ -303,13 +315,15 @@ fun HomeScreen(
             }
         }
 
-        // Section 2: Top 2 Recent Curhatan / Notes
+        // Section 2: Top 4 Recent Curhatan / Notes (M3 Expressive Multi-Browse Carousel)
         item {
             Spacer(modifier = Modifier.height(20.dp))
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Column {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Create,
@@ -319,39 +333,160 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Top 2 Catatan Terbaru",
+                        text = "Top 4 Catatan Terbaru",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 if (recentNotes.isEmpty()) {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Belum ada catatan. Ceritakan perasaanmu sekarang!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Belum ada catatan. Ceritakan perasaanmu sekarang!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                } else {
+                    HorizontalMultiBrowseCarousel(
+                        state = rememberCarouselState { recentNotes.size },
+                        preferredItemWidth = 280.dp,
+                        itemSpacing = 8.dp,
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(210.dp)
+                    ) { index ->
+                        val note = recentNotes[index]
+                        HomeNoteCarouselCard(
+                            note = note,
+                            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
                         )
                     }
                 }
             }
         }
+    }
+}
 
-        itemsIndexed(recentNotes, key = { _, note -> note.id }) { _, note ->
-            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                NoteCard(
-                    note = note,
-                    playerState = playerState,
-                    onPlayTrackClick = onPlayTrackClick,
-                    onDeleteClick = onDeleteNoteClick
+@Composable
+fun HomeNoteCarouselCard(
+    note: JournalNote,
+    modifier: Modifier = Modifier
+) {
+    val categoryColor = when (note.category) {
+        "Asmara & Cinta" -> PastelRose
+        "Pendidikan & Sekolah" -> PastelMint
+        "Perjalanan Jati Diri" -> PastelLavender
+        else -> MaterialTheme.colorScheme.tertiary
+    }
+
+    val formattedDate = remember(note.timestamp) {
+        val sdf = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale("id", "ID"))
+        sdf.format(Date(note.timestamp))
+    }
+
+    Card(
+        modifier = modifier
+            .width(285.dp)
+            .height(205.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Header Row: Mood + Category
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = note.moodEmoji, fontSize = 20.sp)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = categoryColor.copy(alpha = 0.2f)
+                ) {
+                    Text(
+                        text = note.category,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = categoryColor,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Middle: Note Content (Larger text for full, dense aesthetic)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = note.content,
+                    fontFamily = PlayfairRegularFamily,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Bottom Row: Minimal Song Title + Date
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (!note.trackName.isNullOrEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(PastelRose.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = PastelRose,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${note.trackName}${if (!note.artistName.isNullOrEmpty()) " • ${note.artistName}" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PastelRose,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontSize = 10.sp
                 )
             }
         }

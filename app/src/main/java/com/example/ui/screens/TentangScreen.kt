@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -93,7 +97,7 @@ fun TentangScreen(
                 )
 
                 Text(
-                    text = "A Safe Space for Gen Z & Teens",
+                    text = "A Safe Space for Gen Z & Teens • Versi 1.0.0",
                     style = MaterialTheme.typography.labelLarge,
                     color = PastelRose,
                     fontWeight = FontWeight.SemiBold
@@ -112,7 +116,7 @@ fun TentangScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Developer Branding Card
+        // Pengaturan Mode / Tema (M3 Expressive Locked Toggle)
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
@@ -120,44 +124,135 @@ fun TentangScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(18.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = PastelMint.copy(alpha = 0.2f),
-                    modifier = Modifier.size(54.dp)
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.RocketLaunch,
-                            contentDescription = null,
-                            tint = PastelMint,
-                            modifier = Modifier.size(28.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = PastelLavender.copy(alpha = 0.2f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Palette,
+                                    contentDescription = null,
+                                    tint = PastelLavender,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Pengaturan Mode & Tema",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Pilih mode tampilan favoritmu",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = PastelRose.copy(alpha = 0.2f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = PastelRose,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Soon",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PastelRose,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Column {
-                    Text(
-                        text = "Dikembangkan oleh",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "windulabs",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = PastelLavender
-                    )
-                    Text(
-                        text = "Versi 1.0.0 • Production Build",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                // M3 Expressive Segmented Toggle Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Light Mode Toggle Option (Disabled)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.Transparent,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(enabled = false) {}
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WbSunny,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Light Mode",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+
+                    // Dark Mode Toggle Option (Active Default)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = PastelLavender.copy(alpha = 0.25f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(enabled = false) {}
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DarkMode,
+                                contentDescription = null,
+                                tint = PastelLavender,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Dark Mode",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PastelLavender
+                            )
+                        }
+                    }
                 }
             }
         }
