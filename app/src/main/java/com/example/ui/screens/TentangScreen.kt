@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,9 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
@@ -72,20 +77,14 @@ fun TentangScreen(
                 .padding(24.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    shape = CircleShape,
-                    color = PastelLavender.copy(alpha = 0.2f),
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            tint = PastelRose,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo_banner),
+                    contentDescription = "Logo Banner",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Fit
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -308,6 +307,23 @@ fun TentangScreen(
             title = "Privasi Terjamin (Local Room DB)",
             description = "Semua catatan & cerita tersimpan aman di penyimpanan internal perangkatmu tanpa melacak data pribadi."
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Copyright Logo Image
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.copyright_logo),
+                contentDescription = "Copyright Logo",
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .wrapContentHeight(),
+                contentScale = ContentScale.Fit
+            )
+        }
     }
 }
 
