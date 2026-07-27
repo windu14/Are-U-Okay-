@@ -181,8 +181,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     NavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = { onSelectTab(1) },
-                        icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "Teman AI") },
-                        label = { Text("Teman AI", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
+                        label = { Text("Global Curhat", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color(0xFF261833),
                             selectedTextColor = PastelLavender,
@@ -195,22 +195,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     NavigationBarItem(
                         selected = selectedTab == 2,
                         onClick = { onSelectTab(2) },
-                        icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
-                        label = { Text("Global Curhat", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF261833),
-                            selectedTextColor = PastelLavender,
-                            indicatorColor = PastelLavender,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-
-                    NavigationBarItem(
-                        selected = selectedTab == 3,
-                        onClick = { onSelectTab(3) },
                         icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
-                        label = { Text("Tentang", fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text("Tentang", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color(0xFF261833),
                             selectedTextColor = PastelLavender,
@@ -238,22 +224,11 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { viewModel.openAddNoteDialog() },
-                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
+                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
+                    onOpenAiChat = { onSelectTab(3) }
                 )
 
-                1 -> AiChatScreen(
-                    messages = aiMessages,
-                    isThinking = isAiThinking,
-                    errorMessage = aiErrorMessage,
-                    onSendMessage = { prompt -> viewModel.sendAiMessage(prompt) },
-                    onClearChat = { viewModel.clearAiChat() },
-                    onSaveToNote = { content, category, moodEmoji ->
-                        viewModel.saveAiResponseToJournal(content, category, moodEmoji)
-                    },
-                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
-                )
-
-                2 -> GlobalCurhatScreen(
+                1 -> GlobalCurhatScreen(
                     notes = filteredNotes,
                     selectedCategory = selectedCategory,
                     playerState = playerState,
@@ -266,7 +241,21 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
                 )
 
-                3 -> TentangScreen()
+                2 -> TentangScreen()
+
+                3 -> AiChatScreen(
+                    messages = aiMessages,
+                    isThinking = isAiThinking,
+                    errorMessage = aiErrorMessage,
+                    onSendMessage = { prompt -> viewModel.sendAiMessage(prompt) },
+                    onClearChat = { viewModel.clearAiChat() },
+                    onSaveToNote = { content, category, moodEmoji ->
+                        viewModel.saveAiResponseToJournal(content, category, moodEmoji)
+                    },
+                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
+                    onBackClick = { onSelectTab(0) },
+                    onSaveApiKey = { key -> viewModel.saveCustomApiKey(key) }
+                )
             }
 
             // Screen Transition Loading Overlay (4 Seconds)

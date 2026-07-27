@@ -93,14 +93,16 @@ fun TentangScreen(
                     text = "are you okay?",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = PastelLavender
+                    color = PastelLavender,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
                 Text(
                     text = "A Safe Space for Gen Z & Teens • Versi 1.0.0",
                     style = MaterialTheme.typography.labelLarge,
                     color = PastelRose,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -109,7 +111,8 @@ fun TentangScreen(
                     text = "Didesain khusus untuk menangkap dinamika perasaan remaja & Gen Z: bahagia asmara, sedih patah hati, keraguan jati diri, hingga tekanan pendidikan.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 22.sp
+                    lineHeight = 22.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -130,7 +133,10 @@ fun TentangScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Surface(
                             shape = CircleShape,
                             color = PastelLavender.copy(alpha = 0.2f),
@@ -146,7 +152,7 @@ fun TentangScreen(
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Pengaturan Mode & Tema",
                                 style = MaterialTheme.typography.titleSmall,
@@ -167,7 +173,7 @@ fun TentangScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Lock,
@@ -180,7 +186,8 @@ fun TentangScreen(
                                 text = "Soon",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = PastelRose,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
                             )
                         }
                     }

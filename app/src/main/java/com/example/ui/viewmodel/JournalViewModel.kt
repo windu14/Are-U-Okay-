@@ -179,12 +179,26 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private val _aiErrorMessage = MutableStateFlow<String?>(null)
     val aiErrorMessage: StateFlow<String?> = _aiErrorMessage.asStateFlow()
 
+    private val _customApiKey = MutableStateFlow<String?>(null)
+
+    fun saveCustomApiKey(key: String) {
+        _customApiKey.value = key
+        _aiErrorMessage.value = null
+        val lastUserMsg = _aiMessages.value.lastOrNull { it.isUser }
+        if (lastUserMsg != null) {
+            sendAiMessageInternal(lastUserMsg.text)
+        }
+    }
+
     fun sendAiMessage(prompt: String) {
         if (prompt.isBlank()) return
         val userMsg = AiChatMessage(text = prompt, isUser = true)
         val updatedList = _aiMessages.value + userMsg
         _aiMessages.value = updatedList
+        sendAiMessageInternal(prompt)
+    }
 
+    private fun sendAiMessageInternal(prompt: String) {
         _isAiThinking.value = true
         _aiErrorMessage.value = null
 
@@ -192,12 +206,16 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             val minThinkingDelay = async { delay(3000L) } // 3 detik AI berpikir
 
             // Build GeminiMessage list for API history
-            val history = updatedList.dropLast(1).map {
+            val history = _aiMessages.value.dropLast(1).map {
                 GeminiMessage(role = if (it.isUser) "user" else "model", text = it.text)
             }
 
-            val result = geminiApiService.sendMessage(history, prompt)
-            
+            val result = geminiApiService.sendMessage(
+                chatHistory = history,
+                userPrompt = prompt,
+                apiKeyOverride = _customApiKey.value
+            )
+
             minThinkingDelay.await() // Pastikan durasi berpikir minimal 3 detik
             _isAiThinking.value = false
 

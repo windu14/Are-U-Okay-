@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -86,6 +87,7 @@ fun HomeScreen(
     onDeleteNoteClick: (Int) -> Unit,
     onOpenAddNote: () -> Unit,
     onOpenMusicSearch: () -> Unit,
+    onOpenAiChat: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -129,7 +131,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
                     .clip(RoundedCornerShape(28.dp))
                     .background(
                         Brush.linearGradient(
@@ -249,6 +251,35 @@ fun HomeScreen(
             }
         }
 
+        // Teman AI Card Banner (Clickable header_ai.svg banner directly below are you okay card)
+        item {
+            Card(
+                onClick = onOpenAiChat,
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF2A2138)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                ) {
+                    AsyncImage(
+                        model = "file:///android_asset/header_ai.svg",
+                        contentDescription = "Teman Curhat AI",
+                        imageLoader = svgImageLoader,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
         // Section 1: Top 3 Frequently Attached Songs
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -358,20 +389,16 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    HorizontalMultiBrowseCarousel(
-                        state = rememberCarouselState { recentNotes.size },
-                        preferredItemWidth = 280.dp,
-                        itemSpacing = 8.dp,
+                    LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(210.dp)
-                    ) { index ->
-                        val note = recentNotes[index]
-                        HomeNoteCarouselCard(
-                            note = note,
-                            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(recentNotes.take(4), key = { it.id }) { note ->
+                            HomeNoteCarouselCard(
+                                note = note
+                            )
+                        }
                     }
                 }
             }
@@ -398,8 +425,8 @@ fun HomeNoteCarouselCard(
 
     Card(
         modifier = modifier
-            .width(285.dp)
-            .height(205.dp),
+            .width(280.dp)
+            .height(190.dp),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
@@ -412,16 +439,18 @@ fun HomeNoteCarouselCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header Row: Mood + Category
+            // Header Row: Mood + Category Tag
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = note.moodEmoji, fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = categoryColor.copy(alpha = 0.2f)
+                    color = categoryColor.copy(alpha = 0.2f),
+                    modifier = Modifier.widthIn(max = 190.dp)
                 ) {
                     Text(
                         text = note.category,
