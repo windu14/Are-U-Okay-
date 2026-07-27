@@ -33,6 +33,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private val repository: JournalRepository
     private val geminiApiService = GeminiApiService()
     val audioPlayer: AudioPreviewPlayer
+    private val _customApiKey = MutableStateFlow<String?>(null)
 
     init {
         val db = AppDatabase.getDatabase(application)
@@ -47,6 +48,11 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                 repository.clearAllNotes()
                 prefs.edit().putBoolean("dummy_data_cleared_v2", true).apply()
             }
+        }
+
+        val savedApiKey = prefs.getString("custom_gemini_api_key", null)
+        if (!savedApiKey.isNullOrBlank()) {
+            _customApiKey.value = savedApiKey
         }
     }
 
@@ -179,10 +185,10 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private val _aiErrorMessage = MutableStateFlow<String?>(null)
     val aiErrorMessage: StateFlow<String?> = _aiErrorMessage.asStateFlow()
 
-    private val _customApiKey = MutableStateFlow<String?>(null)
-
     fun saveCustomApiKey(key: String) {
         _customApiKey.value = key
+        val prefs = getApplication<Application>().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("custom_gemini_api_key", key).apply()
         _aiErrorMessage.value = null
         val lastUserMsg = _aiMessages.value.lastOrNull { it.isUser }
         if (lastUserMsg != null) {

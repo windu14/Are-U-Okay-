@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -112,6 +113,7 @@ fun AiChatScreen(
     val context = LocalContext.current
     var inputText by remember { mutableStateOf("") }
     var customKeyInput by remember { mutableStateOf("") }
+    var showKeyDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     // Auto scroll to bottom when new messages arrive
@@ -221,13 +223,23 @@ fun AiChatScreen(
                     }
                 }
 
-                if (messages.isNotEmpty()) {
-                    IconButton(onClick = onClearChat) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { showKeyDialog = !showKeyDialog }) {
                         Icon(
-                            imageVector = Icons.Default.DeleteSweep,
-                            contentDescription = "Hapus Percakapan",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Default.VpnKey,
+                            contentDescription = "Pengaturan API Key Gemini",
+                            tint = if (showKeyDialog) PastelLavender else MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    if (messages.isNotEmpty()) {
+                        IconButton(onClick = onClearChat) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = "Hapus Percakapan",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -261,38 +273,40 @@ fun AiChatScreen(
             }
         }
 
-        // Error Banner if API error occurs
-        if (!errorMessage.isNullOrEmpty()) {
+        // API Key Input / Error Banner
+        if (!errorMessage.isNullOrEmpty() || showKeyDialog) {
             Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = if (!errorMessage.isNullOrEmpty()) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = errorMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            fontWeight = FontWeight.Medium
-                        )
+                    if (!errorMessage.isNullOrEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = errorMessage,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
                     if (onSaveApiKey != null) {
-                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Masukkan API Key Gemini secara manual:",
+                            text = "Konfigurasi API Key (Groq / Gemini):",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            color = if (!errorMessage.isNullOrEmpty()) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -300,7 +314,7 @@ fun AiChatScreen(
                             OutlinedTextField(
                                 value = customKeyInput,
                                 onValueChange = { customKeyInput = it },
-                                placeholder = { Text("Tempel API Key di sini...", fontSize = 12.sp) },
+                                placeholder = { Text("Tempel API Key (Groq / Gemini) di sini...", fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp)
@@ -310,6 +324,7 @@ fun AiChatScreen(
                                 onClick = {
                                     if (customKeyInput.isNotBlank()) {
                                         onSaveApiKey(customKeyInput.trim())
+                                        showKeyDialog = false
                                     }
                                 },
                                 enabled = customKeyInput.isNotBlank(),
