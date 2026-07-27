@@ -33,6 +33,15 @@ class GeminiApiService {
         Jawablah langsung pertanyaan atau curhatan pengguna sebagai obrolan obrolan biasa. Jangan menambahkan catatan atau curhatan secara otomatis ke database aplikasi, karena aplikasi sudah memiliki tombol khusus 'Simpan ke Catatan' untuk pengguna.
     """.trimIndent()
 
+    private fun getApiKeyFromBuildConfig(): String {
+        return try {
+            val field = BuildConfig::class.java.getField("GEMINI_API_KEY")
+            (field.get(null) as? String) ?: ""
+        } catch (e: Throwable) {
+            ""
+        }
+    }
+
     suspend fun sendMessage(
         chatHistory: List<GeminiMessage>,
         userPrompt: String,
@@ -40,7 +49,7 @@ class GeminiApiService {
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val apiKey = apiKeyOverride?.ifBlank { null }
-                ?: try { BuildConfig.GEMINI_API_KEY } catch (e: Exception) { "" }
+                ?: getApiKeyFromBuildConfig()
 
             if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
                 return@withContext Result.failure(
