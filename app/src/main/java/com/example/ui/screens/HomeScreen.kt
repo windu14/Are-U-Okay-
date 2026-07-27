@@ -46,6 +46,12 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.remember
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import com.example.R
 import com.example.audio.AudioPlayerState
 import com.example.data.local.JournalNote
@@ -70,6 +76,15 @@ fun HomeScreen(
     onOpenMusicSearch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val svgImageLoader = remember(context) {
+        ImageLoader.Builder(context)
+            .components {
+                add(SvgDecoder.Factory())
+            }
+            .build()
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
@@ -113,6 +128,18 @@ fun HomeScreen(
                         )
                     )
             ) {
+                // Semi-transparent supergraphic illustration in top left
+                AsyncImage(
+                    model = "file:///android_asset/bg_cards_a.svg",
+                    contentDescription = null,
+                    imageLoader = svgImageLoader,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .size(160.dp)
+                        .alpha(0.35f)
+                )
+
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

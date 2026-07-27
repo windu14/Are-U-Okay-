@@ -2,6 +2,7 @@ package com.example
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,5 +18,12 @@ class ExampleRobolectricTest {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
     assertEquals("My Application", appName)
+  }
+
+  @Test
+  fun `load loading drawable`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val drawable = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.loading)
+    assertNotNull(drawable)
   }
 }

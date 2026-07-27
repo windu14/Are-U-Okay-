@@ -5,6 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,21 +47,28 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import com.example.audio.AudioPlayerState
 import com.example.ui.components.AddNoteDialog
 import com.example.ui.components.SearchMusicSheet
@@ -65,6 +79,7 @@ import com.example.ui.theme.AreYouOkayTheme
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelRose
 import com.example.ui.viewmodel.JournalViewModel
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
@@ -84,6 +99,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainAppScreen(viewModel: JournalViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Global Curhat, 2: Tentang
+    var isScreenLoading by remember { mutableStateOf(false) }
+
+    val onSelectTab: (Int) -> Unit = { target ->
+        if (selectedTab != target && !isScreenLoading) {
+            selectedTab = target
+            isScreenLoading = true
+        }
+    }
+
+    LaunchedEffect(isScreenLoading) {
+        if (isScreenLoading) {
+            delay(3000L)
+            isScreenLoading = false
+        }
+    }
 
     val allNotes by viewModel.allNotes.collectAsStateWithLifecycle()
     val recentNotes by viewModel.recentNotes.collectAsStateWithLifecycle()
@@ -130,7 +160,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                 ) {
                     NavigationBarItem(
                         selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
+                        onClick = { onSelectTab(0) },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                         label = { Text("Home", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
@@ -144,7 +174,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
 
                     NavigationBarItem(
                         selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
+                        onClick = { onSelectTab(1) },
                         icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
                         label = { Text("Global Curhat", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
@@ -158,7 +188,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
 
                     NavigationBarItem(
                         selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
+                        onClick = { onSelectTab(2) },
                         icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
                         label = { Text("Tentang", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
@@ -205,6 +235,11 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                 )
 
                 2 -> TentangScreen()
+            }
+
+            // Screen Transition Loading Overlay (4 Seconds)
+            if (isScreenLoading) {
+                ScreenTransitionLoadingOverlay()
             }
 
             // Dialogs & Sheets
@@ -365,5 +400,45 @@ fun MiniPlayerBar(
                 trackColor = Color(0xFF1E1B28)
             )
         }
+    }
+}
+
+@Composable
+fun ScreenTransitionLoadingOverlay() {
+    val context = LocalContext.current
+    val imageLoader = remember(context) {
+        ImageLoader.Builder(context)
+            .components {
+                add(SvgDecoder.Factory())
+            }
+            .build()
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "screen_transition_rotation")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation_angle"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.35f))
+            .clickable(enabled = false) {},
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = "file:///android_asset/loading.svg",
+            contentDescription = "Loading...",
+            imageLoader = imageLoader,
+            modifier = Modifier
+                .size(180.dp)
+                .rotate(angle)
+        )
     }
 }
