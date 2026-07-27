@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,9 +38,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.audio.AudioPlayerState
 import com.example.data.local.JournalNote
 import com.example.data.local.SongFrequency
@@ -48,6 +55,9 @@ import com.example.ui.components.SongCard
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
+
+private val playfairBoldFamily = FontFamily(Font(R.font.playfairdisplay_bold, FontWeight.Bold))
+private val playfairMediumItalicFamily = FontFamily(Font(R.font.playfairdisplay_mediumitalic, FontWeight.Medium, FontStyle.Italic))
 
 @Composable
 fun HomeScreen(
@@ -64,12 +74,35 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
+        // Banner Image Card
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 4.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.banner_home),
+                    contentDescription = "Banner Home",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
         // Header Card Banner
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
                     .clip(RoundedCornerShape(28.dp))
                     .background(
                         Brush.linearGradient(
@@ -125,6 +158,7 @@ fun HomeScreen(
 
                     Text(
                         text = "are you okay? 💜",
+                        fontFamily = playfairBoldFamily,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = PastelLavender
@@ -132,6 +166,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Nggak apa-apa kalau hari ini terasa berat. Tempat amanmu untuk tumpahkan rasa & dengar lagu impian.",
+                        fontFamily = playfairMediumItalicFamily,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
