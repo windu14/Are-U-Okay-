@@ -89,9 +89,35 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            com.google.firebase.FirebaseApp.initializeApp(this)
-        } catch (ignored: Exception) {
-            android.util.Log.e("MainActivity", "FirebaseApp init exception", ignored)
+            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                val app = com.google.firebase.FirebaseApp.initializeApp(this)
+                if (app == null) {
+                    val options = com.google.firebase.FirebaseOptions.Builder()
+                        .setApiKey("AIzaSyAuhsyXg1Q3AtcPkQSBWnypyBQmUEpYQLo")
+                        .setApplicationId("1:81299636875:android:823c3fe2bd495a4b524a8e")
+                        .setProjectId("areyouokay-c1487")
+                        .setGcmSenderId("81299636875")
+                        .setStorageBucket("areyouokay-c1487.firebasestorage.app")
+                        .build()
+                    com.google.firebase.FirebaseApp.initializeApp(this, options)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "FirebaseApp default init exception, trying explicit options", e)
+            try {
+                if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                    val options = com.google.firebase.FirebaseOptions.Builder()
+                        .setApiKey("AIzaSyAuhsyXg1Q3AtcPkQSBWnypyBQmUEpYQLo")
+                        .setApplicationId("1:81299636875:android:823c3fe2bd495a4b524a8e")
+                        .setProjectId("areyouokay-c1487")
+                        .setGcmSenderId("81299636875")
+                        .setStorageBucket("areyouokay-c1487.firebasestorage.app")
+                        .build()
+                    com.google.firebase.FirebaseApp.initializeApp(this, options)
+                }
+            } catch (ex: Exception) {
+                android.util.Log.e("MainActivity", "Explicit FirebaseApp init exception", ex)
+            }
         }
         enableEdgeToEdge()
         setContent {
