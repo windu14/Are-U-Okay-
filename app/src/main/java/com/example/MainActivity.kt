@@ -71,12 +71,11 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import com.example.audio.AudioPlayerState
-import com.example.ui.components.AddNoteDialog
-import com.example.ui.components.SearchMusicSheet
 import com.example.ui.screens.AiChatScreen
 import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.TentangScreen
+import com.example.ui.screens.WriteCurhatScreen
 import com.example.ui.theme.AreYouOkayTheme
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelRose
@@ -223,7 +222,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                         viewModel.playTrackPreview(url, title, artist, art, cardId)
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
-                    onOpenAddNote = { viewModel.openAddNoteDialog() },
+                    onOpenAddNote = { onSelectTab(4) },
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
                     onOpenAiChat = { onSelectTab(3) }
                 )
@@ -237,7 +236,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                         viewModel.playTrackPreview(url, title, artist, art, cardId)
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
-                    onOpenAddNote = { viewModel.openAddNoteDialog() },
+                    onOpenAddNote = { onSelectTab(4) },
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
                 )
 
@@ -256,6 +255,16 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onBackClick = { onSelectTab(0) },
                     onSaveApiKey = { key -> viewModel.saveCustomApiKey(key) }
                 )
+
+                4 -> WriteCurhatScreen(
+                    selectedTrack = selectedTrack,
+                    onSaveNote = { content, category, moodEmoji ->
+                        viewModel.addNote(content, category, moodEmoji)
+                    },
+                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
+                    onRemoveTrack = { viewModel.selectTrackForNote(null) },
+                    onBackClick = { onSelectTab(0) }
+                )
             }
 
             // Screen Transition Loading Overlay (4 Seconds)
@@ -263,21 +272,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                 ScreenTransitionLoadingOverlay()
             }
 
-            // Dialogs & Sheets
-            if (showAddNoteDialog) {
-                AddNoteDialog(
-                    selectedTrack = selectedTrack,
-                    onDismiss = { viewModel.dismissAddNoteDialog() },
-                    onSaveNote = { content, category, moodEmoji ->
-                        viewModel.addNote(content, category, moodEmoji)
-                    },
-                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
-                    onRemoveTrack = { viewModel.selectTrackForNote(null) }
-                )
-            }
-
+            // Music Search Sheet
             if (showSearchMusicSheet) {
-                SearchMusicSheet(
+                com.example.ui.components.SearchMusicSheet(
                     searchQuery = searchQuery,
                     searchResults = searchResults,
                     isSearching = isSearching,
@@ -290,7 +287,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onSelectTrack = { track ->
                         viewModel.selectTrackForNote(track)
                         viewModel.dismissSearchMusicSheet()
-                        viewModel.openAddNoteDialog()
+                        onSelectTab(4)
                     },
                     onDismiss = { viewModel.dismissSearchMusicSheet() }
                 )

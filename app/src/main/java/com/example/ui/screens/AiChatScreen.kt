@@ -185,7 +185,7 @@ fun AiChatScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Teman Curhat AI",
+                                text = "Ngobrol Mochibot",
                                 fontFamily = PlayfairBoldFamily,
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
@@ -215,7 +215,7 @@ fun AiChatScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isThinking) "Sedang mengetik..." else "Online & Siap Mendengar",
+                                text = if (isThinking) "Mochibot lagi dengerin....." else "Online & Siap Mendengar",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -224,22 +224,15 @@ fun AiChatScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { showKeyDialog = !showKeyDialog }) {
+                    IconButton(
+                        onClick = onClearChat,
+                        enabled = messages.isNotEmpty()
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.VpnKey,
-                            contentDescription = "Pengaturan API Key Gemini",
-                            tint = if (showKeyDialog) PastelLavender else MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = "Hapus Riwayat Chat",
+                            tint = if (messages.isNotEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                         )
-                    }
-
-                    if (messages.isNotEmpty()) {
-                        IconButton(onClick = onClearChat) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteSweep,
-                                contentDescription = "Hapus Percakapan",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
             }
@@ -355,9 +348,9 @@ fun AiChatScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.banner_chat),
-                        contentDescription = "Banner Teman Curhat AI",
+                        contentDescription = "Banner Ngobrol Mochibot",
                         modifier = Modifier
-                            .fillMaxWidth(0.75f)
+                            .fillMaxWidth(0.50f)
                             .clip(RoundedCornerShape(20.dp)),
                         contentScale = ContentScale.Fit
                     )
@@ -486,7 +479,7 @@ fun ChatBubbleItem(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Teman AI",
+                    text = "Mochibot",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = PastelLavender
@@ -565,6 +558,16 @@ fun ChatBubbleItem(
                 }
             }
         }
+
+        if (!isUser && !message.thinkingTimeSec.isNullOrEmpty()) {
+            Text(
+                text = "selesai berpikir dalam ${message.thinkingTimeSec} detik",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 4.dp, start = 6.dp)
+            )
+        }
     }
 }
 
@@ -616,7 +619,7 @@ fun ThinkingIndicatorBubble() {
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Teman AI sedang berpikir...",
+                    text = "Mochibot lagi dengerin.....",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

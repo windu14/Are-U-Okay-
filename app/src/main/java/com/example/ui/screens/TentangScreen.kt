@@ -22,11 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
@@ -81,7 +83,7 @@ fun TentangScreen(
                     painter = painterResource(id = R.drawable.logo_banner),
                     contentDescription = "Logo Banner",
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(110.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Fit
                 )
@@ -266,7 +268,7 @@ fun TentangScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Fitur Unggulan M3 Expressive:",
+            text = "Fitur Unggulan:",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -274,39 +276,128 @@ fun TentangScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        FeatureDetailRow(
-            icon = Icons.Default.Headphones,
-            iconTint = PastelLavender,
-            title = "iTunes Music Search & Preview",
-            description = "Cari lagu apapun langsung dari katalog iTunes API resmi & putar preview audio 30 detik di setiap curhatanmu."
-        )
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Feature 1: Tulis Curhat & Mood React
+                Row(verticalAlignment = Alignment.Top) {
+                    Surface(
+                        shape = CircleShape,
+                        color = PastelLavender.copy(alpha = 0.2f),
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Create,
+                                contentDescription = null,
+                                tint = PastelLavender,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Tulis Curhat & Mood React",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tuliskan isi hatimu lengkap dengan pilihan emoji mood react untuk mengekspresikan perasaanmu.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(12.dp))
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
 
-        FeatureDetailRow(
-            icon = Icons.Default.AutoAwesome,
-            iconTint = PastelRose,
-            title = "Material Design 3 Expressive UI",
-            description = "Tampilan modern dengan M3 Expressive Loading Indicator & Expressive Floating Action Button Menu terbaru."
-        )
+                // Feature 2: Ngobrol dengan Mochibot & Buatin Curhatan
+                Row(verticalAlignment = Alignment.Top) {
+                    Surface(
+                        shape = CircleShape,
+                        color = PastelRose.copy(alpha = 0.2f),
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = PastelRose,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Ngobrol dengan Mochibot & Buatin Curhatan",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Teman AI yang selalu mendengarkan tanpa menghakimi dan bisa bantu buatkan catatan curhatan dari obrolanmu.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(12.dp))
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
 
-        FeatureDetailRow(
-            icon = Icons.Default.Code,
-            iconTint = PastelMint,
-            title = "3 Warna Pastel Dark Aesthetic",
-            description = "Dibalut kombinasi warna pastel lavender, pastel rose, dan pastel mint pada kanvas gelap yang nyaman di mata."
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FeatureDetailRow(
-            icon = Icons.Default.Lock,
-            iconTint = PastelLavender,
-            title = "Privasi Terjamin (Local Room DB)",
-            description = "Semua catatan & cerita tersimpan aman di penyimpanan internal perangkatmu tanpa melacak data pribadi."
-        )
+                // Feature 3: Attach Musik ke Curhatan
+                Row(verticalAlignment = Alignment.Top) {
+                    Surface(
+                        shape = CircleShape,
+                        color = PastelMint.copy(alpha = 0.2f),
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Headphones,
+                                contentDescription = null,
+                                tint = PastelMint,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Attach Musik ke Curhatan",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Sertakan lagu favorit dari iTunes sebagai pengiring curhatan untuk merasakan emosi cerita lebih dalam.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

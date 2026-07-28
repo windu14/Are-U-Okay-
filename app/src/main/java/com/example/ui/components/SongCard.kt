@@ -1,11 +1,13 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +32,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,10 +40,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -50,6 +57,7 @@ import com.example.audio.AudioPlayerState
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
+import kotlin.math.sin
 
 @Composable
 fun SongCard(
@@ -237,14 +245,13 @@ fun SongCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     PlayingAudioWaveAnimation(modifier = Modifier.padding(end = 8.dp))
-                    LinearProgressIndicator(
+                    LinearWavyProgressIndicator(
                         progress = { playerState.progress },
                         modifier = Modifier
                             .weight(1f)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp)),
+                            .height(14.dp),
                         color = PastelLavender,
-                        trackColor = MaterialTheme.colorScheme.surface
+                        trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -255,6 +262,72 @@ fun SongCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun LinearWavyProgressIndicator(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    color: Color = PastelLavender,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    wavelength: Dp = 10.dp,
+    amplitude: Dp = 2.5.dp,
+    strokeWidth: Dp = 2.5.dp
+) {
+    val density = LocalDensity.current
+    val wavelengthPx = with(density) { wavelength.toPx() }
+    val amplitudePx = with(density) { amplitude.toPx() }
+    val strokeWidthPx = with(density) { strokeWidth.toPx() }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "wavy_progress")
+    val phaseShift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f * Math.PI.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "phase"
+    )
+
+    Canvas(modifier = modifier) {
+        val width = size.width
+        val centerY = size.height / 2f
+        val currentProgress = progress().coerceIn(0f, 1f)
+        val activeWidth = width * currentProgress
+
+        // 1. Draw Inactive Track (Straight Line)
+        if (activeWidth < width) {
+            drawLine(
+                color = trackColor,
+                start = Offset(activeWidth, centerY),
+                end = Offset(width, centerY),
+                strokeWidth = strokeWidthPx,
+                cap = StrokeCap.Round
+            )
+        }
+
+        // 2. Draw Active Progress (Sine Wavy Path)
+        if (activeWidth > 0f) {
+            val path = Path()
+            val stepPx = 2f
+            var x = 0f
+            val startY = centerY + amplitudePx * sin((x / wavelengthPx) * (2 * Math.PI.toFloat()) - phaseShift)
+            path.moveTo(0f, startY)
+
+            while (x <= activeWidth) {
+                val y = centerY + amplitudePx * sin((x / wavelengthPx) * (2 * Math.PI.toFloat()) - phaseShift)
+                path.lineTo(x, y)
+                x += stepPx
+            }
+
+            drawPath(
+                path = path,
+                color = color,
+                style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+            )
         }
     }
 }

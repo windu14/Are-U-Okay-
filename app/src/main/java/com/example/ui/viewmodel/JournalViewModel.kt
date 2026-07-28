@@ -209,6 +209,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         _aiErrorMessage.value = null
 
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
             val minThinkingDelay = async { delay(3000L) } // 3 detik AI berpikir
 
             // Build GeminiMessage list for API history
@@ -223,13 +224,20 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             )
 
             minThinkingDelay.await() // Pastikan durasi berpikir minimal 3 detik
+            val durationMs = System.currentTimeMillis() - startTime
+            val durationSecStr = java.lang.String.format(java.util.Locale.US, "%.1f", durationMs / 1000f)
+
             _isAiThinking.value = false
 
             result.onSuccess { responseText ->
-                val aiMsg = AiChatMessage(text = responseText, isUser = false)
+                val aiMsg = AiChatMessage(
+                    text = responseText,
+                    isUser = false,
+                    thinkingTimeSec = durationSecStr
+                )
                 _aiMessages.value = _aiMessages.value + aiMsg
             }.onFailure { err ->
-                _aiErrorMessage.value = err.message ?: "Terjadi kesalahan saat menghubungi Teman AI."
+                _aiErrorMessage.value = err.message ?: "Terjadi kesalahan saat menghubungi Mochibot."
             }
         }
     }
