@@ -35,90 +35,146 @@ class GitHubUpdateManager(
         .build()
 
     suspend fun checkForUpdatesDetailed(): UpdateCheckResult = withContext(Dispatchers.IO) {
-        val reposToTry = listOf(repoName, repoName.trimEnd('-'), "Are-U-Okay")
-        var lastErrorMessage = ""
+        try {
+            // First try GET /releases to find the latest release with an APK asset
+            val listUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
+            val request = Request.Builder()
+                .url(listUrl)
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("User-Agent", "AreYouOkayApp")
+                .build()
 
-        for (rName in reposToTry.distinct()) {
-            try {
-                val url = "https://api.github.com/repos/$repoOwner/$rName/releases/latest"
-                val request = Request.Builder()
-                    .url(url)
-                    .header("Accept", "application/vnd.github.v3+json")
-                    .header("User-Agent", "AreYouOkayApp")
-                    .build()
+            client.newCall(request).execute().use { response ->
+                if (response.code == 403) {
+                    return@withContext UpdateCheckResult.Error("Batas request GitHub API terlampaui. Coba lagi beberapa saat lagi.")
+                }
 
-                client.newCall(request).execute().use { response ->
-                    if (response.code == 404) {
-                        lastErrorMessage = "Repository atau release tidak ditemukan di GitHub ($repoOwner/$rName)."
-                        return@use
-                    }
-                    if (response.code == 403) {
-                        return@withContext UpdateCheckResult.Error("Batas request GitHub API terlampaui. Coba lagi beberapa saat lagi.")
-                    }
-                    if (!response.isSuccessful) {
-                        lastErrorMessage = "Gagal menghubungi GitHub API (HTTP ${response.code})."
-                        return@use
-                    }
+                if (response.isSuccessful) {
+                    val bodyStr = response.body?.string()
+                    if (!bodyStr.isNullByBlank()) {
+                        val releasesArray = org.json.JSONArray(bodyStr)
+                        var latestReleaseWithApk: JSONObject? = null
+                        var apkUrl = ""
 
-                    val bodyStr = response.body?.string() ?: return@withContext UpdateCheckResult.Error("Respon dari GitHub kosong.")
-                    val json = JSONObject(bodyStr)
+                        for (i in 0 until releasesArray.length()) {
+                            val releaseObj = releasesArray.getJSONObject(i)
+                            if (releaseObj.optBoolean("draft", false)) continue
 
-                    val tagName = json.optString("tag_name", "").trim()
-                    val releaseTitle = json.optString("name", tagName)
-                    val releaseNotes = json.optString("body", "Pembaruan versi baru tersedia.")
-
-                    if (tagName.isBlank()) {
-                        return@withContext UpdateCheckResult.Error("Tag release GitHub tidak valid.")
-                    }
-
-                    // Find APK asset
-                    var downloadUrl = ""
-                    val assets = json.optJSONArray("assets")
-                    if (assets != null) {
-                        for (i in 0 until assets.length()) {
-                            val asset = assets.getJSONObject(i)
-                            val name = asset.optString("name", "")
-                            if (name.endsWith(".apk", ignoreCase = true)) {
-                                downloadUrl = asset.optString("browser_download_url", "")
-                                break
+                            val assets = releaseObj.optJSONArray("assets") ?: continue
+                            for (j in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(j)
+                                val assetName = asset.optString("name", "")
+                                if (assetName.endsWith(".apk", ignoreCase = true)) {
+                                    apkUrl = asset.optString("browser_download_url", "")
+                                    latestReleaseWithApk = releaseObj
+                                    break
+                                }
                             }
+
+                            if (latestReleaseWithApk != null) break
+                        }
+
+                        if (latestReleaseWithApk != null && apkUrl.isNotBlank()) {
+                            val tagName = latestReleaseWithApk.optString("tag_name", "").trim()
+                            val releaseTitle = latestReleaseWithApk.optString("name", tagName)
+                            val releaseNotes = latestReleaseWithApk.optString("body", "Pembaruan versi baru tersedia.")
+
+                            val cleanRemote = cleanVersion(tagName)
+                            val cleanCurrent = cleanVersion(BuildConfig.VERSION_NAME)
+                            val isNewer = isVersionNewer(cleanRemote, cleanCurrent)
+
+                            Log.d("UpdateManager", "Current: $cleanCurrent, Remote: $cleanRemote, IsNewer: $isNewer")
+
+                            val updateInfo = AppUpdateInfo(
+                                latestVersionName = tagName,
+                                releaseTitle = releaseTitle,
+                                releaseNotes = releaseNotes,
+                                downloadUrl = apkUrl,
+                                isUpdateAvailable = isNewer
+                            )
+
+                            return@withContext if (isNewer) {
+                                UpdateCheckResult.Success(updateInfo)
+                            } else {
+                                UpdateCheckResult.UpToDate(cleanCurrent, cleanRemote)
+                            }
+                        } else if (releasesArray.length() > 0) {
+                            val firstRelease = releasesArray.getJSONObject(0)
+                            val tagName = firstRelease.optString("tag_name", "terbaru")
+                            return@withContext UpdateCheckResult.Error("Release $tagName ditemukan, tetapi file APK belum diunggah.")
                         }
                     }
+                }
+            }
 
-                    if (downloadUrl.isBlank()) {
-                        return@withContext UpdateCheckResult.Error("Release $tagName ditemukan, tetapi file APK belum diunggah.")
-                    }
+            // Fallback to /releases/latest if /releases failed or returned empty
+            val latestUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
+            val latestRequest = Request.Builder()
+                .url(latestUrl)
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("User-Agent", "AreYouOkayApp")
+                .build()
 
-                    val cleanRemote = cleanVersion(tagName)
-                    val cleanCurrent = cleanVersion(BuildConfig.VERSION_NAME)
-                    val isNewer = isVersionNewer(cleanRemote, cleanCurrent)
+            client.newCall(latestRequest).execute().use { response ->
+                if (response.code == 404) {
+                    return@withContext UpdateCheckResult.Error("Repository $repoOwner/$repoName atau release belum ada di GitHub.")
+                }
+                if (!response.isSuccessful) {
+                    return@withContext UpdateCheckResult.Error("Gagal menghubungi GitHub API (HTTP ${response.code}).")
+                }
 
-                    Log.d("UpdateManager", "Current: $cleanCurrent, Remote: $cleanRemote, IsNewer: $isNewer")
+                val bodyStr = response.body?.string()
+                if (bodyStr.isNullOrBlank()) {
+                    return@withContext UpdateCheckResult.Error("Respon dari GitHub kosong.")
+                }
 
-                    val updateInfo = AppUpdateInfo(
-                        latestVersionName = tagName,
-                        releaseTitle = releaseTitle,
-                        releaseNotes = releaseNotes,
-                        downloadUrl = downloadUrl,
-                        isUpdateAvailable = isNewer
-                    )
+                val json = JSONObject(bodyStr)
+                val tagName = json.optString("tag_name", "").trim()
+                val releaseTitle = json.optString("name", tagName)
+                val releaseNotes = json.optString("body", "Pembaruan versi baru tersedia.")
 
-                    return@withContext if (isNewer) {
-                        UpdateCheckResult.Success(updateInfo)
-                    } else {
-                        UpdateCheckResult.UpToDate(cleanCurrent, cleanRemote)
+                var downloadUrl = ""
+                val assets = json.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(i)
+                        val name = asset.optString("name", "")
+                        if (name.endsWith(".apk", ignoreCase = true)) {
+                            downloadUrl = asset.optString("browser_download_url", "")
+                            break
+                        }
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("UpdateManager", "Error checking update for repo $rName", e)
-                lastErrorMessage = e.localizedMessage ?: "Gagal terhubung ke internet"
-            }
-        }
 
-        return@withContext UpdateCheckResult.Error(
-            if (lastErrorMessage.isNotBlank()) lastErrorMessage else "Gagal memeriksa pembaruan. Periksa koneksi internet Anda."
-        )
+                if (downloadUrl.isBlank()) {
+                    return@withContext UpdateCheckResult.Error("Release $tagName ditemukan, tetapi file APK belum diunggah.")
+                }
+
+                val cleanRemote = cleanVersion(tagName)
+                val cleanCurrent = cleanVersion(BuildConfig.VERSION_NAME)
+                val isNewer = isVersionNewer(cleanRemote, cleanCurrent)
+
+                val updateInfo = AppUpdateInfo(
+                    latestVersionName = tagName,
+                    releaseTitle = releaseTitle,
+                    releaseNotes = releaseNotes,
+                    downloadUrl = downloadUrl,
+                    isUpdateAvailable = isNewer
+                )
+
+                return@withContext if (isNewer) {
+                    UpdateCheckResult.Success(updateInfo)
+                } else {
+                    UpdateCheckResult.UpToDate(cleanCurrent, cleanRemote)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("UpdateManager", "Error checking update", e)
+            return@withContext UpdateCheckResult.Error(e.localizedMessage ?: "Gagal terhubung ke internet.")
+        }
     }
+
+    private fun String?.isNullByBlank(): Boolean = this == null || this.isBlank()
 
     suspend fun checkForUpdates(): AppUpdateInfo? {
         return when (val result = checkForUpdatesDetailed()) {
