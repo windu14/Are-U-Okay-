@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -66,6 +67,7 @@ import com.example.R
 import com.example.audio.AudioPlayerState
 import com.example.data.local.JournalNote
 import com.example.data.local.SongFrequency
+import com.example.ui.components.HomeCarouselSkeletonRow
 import com.example.ui.components.NoteCard
 import com.example.ui.components.SongCard
 import com.example.ui.theme.PastelLavender
@@ -89,6 +91,8 @@ fun HomeScreen(
     onOpenAddNote: () -> Unit,
     onOpenMusicSearch: () -> Unit,
     onOpenAiChat: () -> Unit,
+    onCommentClick: ((JournalNote) -> Unit)? = null,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -216,37 +220,18 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Button(
+                        onClick = onOpenMusicSearch,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PastelRose.copy(alpha = 0.3f),
+                            contentColor = PastelRose
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Button(
-                            onClick = onOpenAddNote,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PastelLavender,
-                                contentColor = Color(0xFF261833)
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Create, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Curhat", fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = onOpenMusicSearch,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PastelRose.copy(alpha = 0.3f),
-                                contentColor = PastelRose
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Cari Lagu", fontWeight = FontWeight.Bold)
-                        }
+                        Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Cari Lagu", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -374,7 +359,9 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (recentNotes.isEmpty()) {
+                if (isLoading) {
+                    HomeCarouselSkeletonRow()
+                } else if (recentNotes.isEmpty()) {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Card(
                             shape = RoundedCornerShape(16.dp),
@@ -397,7 +384,8 @@ fun HomeScreen(
                     ) {
                         items(recentNotes.take(4), key = { it.id }) { note ->
                             HomeNoteCarouselCard(
-                                note = note
+                                note = note,
+                                onCommentClick = onCommentClick
                             )
                         }
                     }
@@ -410,6 +398,7 @@ fun HomeScreen(
 @Composable
 fun HomeNoteCarouselCard(
     note: JournalNote,
+    onCommentClick: ((JournalNote) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val categoryColor = when (note.category) {
@@ -551,12 +540,45 @@ fun HomeNoteCarouselCard(
                     }
                 }
 
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontSize = 10.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = formattedDate,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 10.sp
+                    )
+
+                    Surface(
+                        onClick = { onCommentClick?.invoke(note) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, PastelLavender.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ChatBubbleOutline,
+                                contentDescription = "Komentar",
+                                tint = PastelLavender,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (note.commentCount > 0) "${note.commentCount}" else "0",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
     }

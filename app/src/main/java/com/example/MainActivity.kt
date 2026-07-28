@@ -150,6 +150,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
         return
     }
 
+    val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Global Curhat, 2: Tentang, 3: Teman AI, 4: Write Curhat, 5: Profile Screen
     var isScreenLoading by remember { mutableStateOf(false) }
 
@@ -172,6 +173,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     val topSongs by viewModel.topSongs.collectAsStateWithLifecycle()
     val filteredNotes by viewModel.filteredNotes.collectAsStateWithLifecycle()
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
+    val isNotesLoading by viewModel.isNotesLoading.collectAsStateWithLifecycle()
 
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -183,6 +185,14 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     val showAddNoteDialog by viewModel.showAddNoteDialog.collectAsStateWithLifecycle()
     val showSearchMusicSheet by viewModel.showSearchMusicSheet.collectAsStateWithLifecycle()
     val selectedTrack by viewModel.selectedTrack.collectAsStateWithLifecycle()
+
+    val activeNoteForComments by viewModel.activeNoteForComments.collectAsStateWithLifecycle()
+    val activeComments by viewModel.activeComments.collectAsStateWithLifecycle()
+
+    val appUpdateInfo by viewModel.appUpdateInfo.collectAsStateWithLifecycle()
+    val isDownloadingUpdate by viewModel.isDownloadingUpdate.collectAsStateWithLifecycle()
+    val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
+    val downloadError by viewModel.downloadError.collectAsStateWithLifecycle()
 
     val aiMessages by viewModel.aiMessages.collectAsStateWithLifecycle()
     val isAiThinking by viewModel.isAiThinking.collectAsStateWithLifecycle()
@@ -275,7 +285,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { onSelectTab(4) },
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
-                    onOpenAiChat = { onSelectTab(3) }
+                    onOpenAiChat = { onSelectTab(3) },
+                    onCommentClick = { note -> viewModel.openCommentsForNote(note) },
+                    isLoading = isNotesLoading
                 )
 
                 1 -> GlobalCurhatScreen(
@@ -288,7 +300,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { onSelectTab(4) },
-                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
+                    onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
+                    onCommentClick = { note -> viewModel.openCommentsForNote(note) },
+                    isLoading = isNotesLoading
                 )
 
                 2 -> TentangScreen(
@@ -363,6 +377,34 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                         onSelectTab(4)
                     },
                     onDismiss = { viewModel.dismissSearchMusicSheet() }
+                )
+            }
+
+            // Comment Bottom Sheet
+            if (activeNoteForComments != null) {
+                com.example.ui.components.CommentBottomSheet(
+                    note = activeNoteForComments!!,
+                    comments = activeComments,
+                    onDismissRequest = { viewModel.closeComments() },
+                    onSendComment = { content ->
+                        viewModel.addComment(content)
+                    }
+                )
+            }
+
+            // OTA In-App Update Dialog
+            if (appUpdateInfo != null) {
+                com.example.ui.components.UpdateDialog(
+                    updateInfo = appUpdateInfo!!,
+                    isDownloading = isDownloadingUpdate,
+                    downloadProgress = downloadProgress,
+                    downloadError = downloadError,
+                    onUpdateClick = {
+                        viewModel.startUpdateDownload(context)
+                    },
+                    onDismissRequest = {
+                        viewModel.dismissUpdateDialog()
+                    }
                 )
             }
         }

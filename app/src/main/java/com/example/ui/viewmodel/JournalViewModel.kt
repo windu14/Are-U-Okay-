@@ -6,7 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.audio.AudioPlayerState
 import com.example.audio.AudioPreviewPlayer
+import com.example.data.AppUpdateInfo
 import com.example.data.local.AiChatMessage
+import com.example.data.local.CommentItem
 import com.example.data.local.JournalNote
 import com.example.data.local.SongFrequency
 import com.example.data.remote.GeminiApiService
@@ -16,6 +18,7 @@ import com.example.data.remote.ITunesTrack
 import com.example.data.remote.UserProfile
 import com.example.data.repository.FirebaseRepository
 import com.example.data.repository.JournalRepository
+import com.example.util.GitHubUpdateManager
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -60,6 +63,19 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
 
+    private val updateManager = GitHubUpdateManager()
+    private val _appUpdateInfo = MutableStateFlow<AppUpdateInfo?>(null)
+    val appUpdateInfo: StateFlow<AppUpdateInfo?> = _appUpdateInfo.asStateFlow()
+
+    private val _isDownloadingUpdate = MutableStateFlow(false)
+    val isDownloadingUpdate: StateFlow<Boolean> = _isDownloadingUpdate.asStateFlow()
+
+    private val _downloadProgress = MutableStateFlow(0f)
+    val downloadProgress: StateFlow<Float> = _downloadProgress.asStateFlow()
+
+    private val _downloadError = MutableStateFlow<String?>(null)
+    val downloadError: StateFlow<String?> = _downloadError.asStateFlow()
+
     init {
         audioPlayer = AudioPreviewPlayer(application)
         val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -67,17 +83,21 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         if (!savedApiKey.isNullOrBlank()) {
             _customApiKey.value = savedApiKey
         }
+        checkAppUpdates()
     }
 
     val playerState: StateFlow<AudioPlayerState> = audioPlayer.playerState
 
     // Firestore Notes state
     private val _localCreatedNotes = MutableStateFlow<List<JournalNote>>(emptyList())
+    private val _isNotesLoading = MutableStateFlow(true)
+    val isNotesLoading: StateFlow<Boolean> = _isNotesLoading.asStateFlow()
 
     val allNotes: StateFlow<List<JournalNote>> = combine(
         firebaseRepository.getAllNotesFlow(),
         _localCreatedNotes
     ) { remoteNotes, localNotes ->
+        _isNotesLoading.value = false
         val unpostedLocal = localNotes.filter { local ->
             remoteNotes.none { remote ->
                 remote.content == local.content && Math.abs(remote.timestamp - local.timestamp) < 10000
@@ -107,6 +127,46 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             .sortedByDescending { it.frequency }
             .take(3)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Comments State
+    private val _activeNoteForComments = MutableStateFlow<JournalNote?>(null)
+    val activeNoteForComments: StateFlow<JournalNote?> = _activeNoteForComments.asStateFlow()
+
+    val activeComments: StateFlow<List<CommentItem>> = _activeNoteForComments.flatMapLatest { note ->
+        if (note != null && note.docId.isNotBlank()) {
+            firebaseRepository.getCommentsFlow(note.docId)
+        } else {
+            flowOf(emptyList())
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun openCommentsForNote(note: JournalNote) {
+        _activeNoteForComments.value = note
+    }
+
+    fun closeComments() {
+        _activeNoteForComments.value = null
+    }
+
+    fun addComment(content: String, parentCommentId: String? = null) {
+        val note = _activeNoteForComments.value ?: return
+        if (content.isBlank() || note.docId.isBlank()) return
+
+        val user = currentUser.value
+        val profile = userProfile.value
+        val uid = user?.uid ?: ""
+        val username = profile?.username ?: user?.displayName ?: "Remaja Ceria"
+
+        viewModelScope.launch {
+            firebaseRepository.addComment(
+                noteDocId = note.docId,
+                parentCommentId = parentCommentId,
+                content = content,
+                uid = uid,
+                username = username
+            )
+        }
+    }
 
     // Category Filter for Global Curhat
     private val _selectedCategory = MutableStateFlow("Semuanya")
@@ -385,6 +445,39 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
     fun saveAiResponseToJournal(content: String, category: String = "Perjalanan Jati Diri", moodEmoji: String = "✨") {
         addNote(content, category, moodEmoji)
+    }
+
+    fun checkAppUpdates() {
+        viewModelScope.launch {
+            val info = updateManager.checkForUpdates()
+            if (info != null && info.isUpdateAvailable) {
+                _appUpdateInfo.value = info
+            }
+        }
+    }
+
+    fun startUpdateDownload(context: Context) {
+        val info = _appUpdateInfo.value ?: return
+        viewModelScope.launch {
+            _isDownloadingUpdate.value = true
+            _downloadError.value = null
+            _downloadProgress.value = 0f
+            updateManager.downloadAndInstallApk(
+                context = context,
+                downloadUrl = info.downloadUrl,
+                onProgress = { progress ->
+                    _downloadProgress.value = progress
+                },
+                onError = { error ->
+                    _isDownloadingUpdate.value = false
+                    _downloadError.value = error
+                }
+            )
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        _appUpdateInfo.value = null
     }
 
     override fun onCleared() {

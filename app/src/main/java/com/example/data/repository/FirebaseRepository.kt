@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.local.CommentItem
 import com.example.data.local.JournalNote
 import com.example.data.remote.ITunesTrack
 import com.example.data.remote.UserProfile
@@ -169,6 +170,12 @@ class FirebaseRepository {
                             is String -> rawTimestamp.toLongOrNull() ?: System.currentTimeMillis()
                             else -> System.currentTimeMillis()
                         }
+                        val rawCommentCount = doc.get("commentCount")
+                        val commentCountInt = when (rawCommentCount) {
+                            is Number -> rawCommentCount.toInt()
+                            is String -> rawCommentCount.toIntOrNull() ?: 0
+                            else -> 0
+                        }
                         JournalNote(
                             id = doc.id.hashCode(),
                             docId = doc.id,
@@ -178,6 +185,7 @@ class FirebaseRepository {
                             category = doc.getString("category") ?: "Semuanya",
                             moodEmoji = doc.getString("moodEmoji") ?: "✨",
                             timestamp = timestampLong,
+                            commentCount = commentCountInt,
                             trackId = trackIdLong,
                             trackName = doc.getString("trackName"),
                             artistName = doc.getString("artistName"),
@@ -279,6 +287,102 @@ class FirebaseRepository {
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun getCommentsFlow(noteDocId: String): Flow<List<CommentItem>> = callbackFlow {
+        if (noteDocId.isBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val listenerRegistration = firestore.collection("curhat")
+            .document(noteDocId)
+            .collection("comments")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+
+                val comments = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val rawTimestamp = doc.get("timestamp")
+                        val timestampLong: Long = when (rawTimestamp) {
+                            is Number -> rawTimestamp.toLong()
+                            is String -> rawTimestamp.toLongOrNull() ?: System.currentTimeMillis()
+                            else -> System.currentTimeMillis()
+                        }
+                        CommentItem(
+                            commentId = doc.id,
+                            noteDocId = noteDocId,
+                            parentCommentId = doc.getString("parentCommentId"),
+                            userId = doc.getString("userId") ?: "",
+                            username = doc.getString("username") ?: "Anonim",
+                            content = doc.getString("content") ?: "",
+                            timestamp = timestampLong
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }.sortedBy { it.timestamp }
+
+                trySend(comments)
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    suspend fun addComment(
+        noteDocId: String,
+        parentCommentId: String?,
+        content: String,
+        uid: String,
+        username: String
+    ): Result<Unit> {
+        return try {
+            if (noteDocId.isBlank()) return Result.failure(Exception("docId invalid"))
+            val authUser = auth.currentUser
+            val effectiveUid = authUser?.uid?.takeIf { it.isNotBlank() }
+                ?: uid.takeIf { it.isNotBlank() }
+                ?: "anon_${System.currentTimeMillis()}"
+
+            val effectiveUsername = if (username.isNotBlank() && username != "Remaja Ceria" && username != "Anonim") username
+                else authUser?.displayName?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Remaja Ceria" }
+
+            val commentRef = firestore.collection("curhat")
+                .document(noteDocId)
+                .collection("comments")
+                .document()
+
+            val commentMap = hashMapOf<String, Any?>(
+                "commentId" to commentRef.id,
+                "noteDocId" to noteDocId,
+                "parentCommentId" to parentCommentId,
+                "userId" to effectiveUid,
+                "username" to effectiveUsername,
+                "content" to content.trim(),
+                "timestamp" to System.currentTimeMillis()
+            )
+
+            commentRef.set(commentMap).await()
+
+            try {
+                firestore.collection("curhat")
+                    .document(noteDocId)
+                    .set(
+                        mapOf("commentCount" to FieldValue.increment(1)),
+                        com.google.firebase.firestore.SetOptions.merge()
+                    ).await()
+            } catch (e: Exception) {
+                android.util.Log.e("FirebaseRepository", "Failed updating commentCount", e)
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseRepository", "Failed adding comment", e)
             Result.failure(e)
         }
     }

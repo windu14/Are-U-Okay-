@@ -14,6 +14,7 @@ data class JournalNote(
     val category: String, // e.g. "Asmara & Cinta", "Masalah Hidup", "Perjalanan Jati Diri", "Pendidikan & Sekolah"
     val moodEmoji: String, // e.g. "💔", "🥹", "🌧️", "✨", "❤️‍🔥", "🎓"
     val timestamp: Long = System.currentTimeMillis(),
+    val commentCount: Int = 0,
     
     // Attached iTunes song details (optional)
     val trackId: Long? = null,
