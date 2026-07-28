@@ -68,11 +68,6 @@ class AudioPreviewPlayer(private val context: Context) {
         }
 
         try {
-            val attrContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                context.createAttributionContext("default")
-            } else {
-                context
-            }
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
@@ -80,7 +75,7 @@ class AudioPreviewPlayer(private val context: Context) {
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .build()
                 )
-                setDataSource(attrContext, android.net.Uri.parse(previewUrl))
+                setDataSource(context, android.net.Uri.parse(previewUrl))
                 setOnPreparedListener { mp ->
                     _playerState.update { it.copy(isBuffering = false, isPlaying = true, durationMs = mp.duration) }
                     mp.start()

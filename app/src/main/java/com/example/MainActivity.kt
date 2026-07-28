@@ -88,6 +88,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try {
+            com.google.firebase.FirebaseApp.initializeApp(this)
+        } catch (ignored: Exception) {
+            android.util.Log.e("MainActivity", "FirebaseApp init exception", ignored)
+        }
         enableEdgeToEdge()
         setContent {
             AreYouOkayTheme {

@@ -39,12 +39,15 @@ android {
     }
   }
 
+  val releaseKeystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+  val isReleaseKeyValid = file(releaseKeystorePath).exists() && !System.getenv("STORE_PASSWORD").isNullOrEmpty()
+
   buildTypes {
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      signingConfig = if (isReleaseKeyValid) signingConfigs.getByName("release") else signingConfigs.getByName("debugConfig")
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }

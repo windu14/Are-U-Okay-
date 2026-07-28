@@ -19,14 +19,24 @@ class FirebaseRepository {
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
     val currentUserFlow: Flow<FirebaseUser?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            trySend(firebaseAuth.currentUser)
+        try {
+            val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+                trySend(try { firebaseAuth.currentUser } catch (e: Exception) { null })
+            }
+            auth.addAuthStateListener(listener)
+            awaitClose {
+                try {
+                    auth.removeAuthStateListener(listener)
+                } catch (ignored: Exception) {}
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseRepository", "Error in currentUserFlow", e)
+            trySend(null)
+            close()
         }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    fun getCurrentUser(): FirebaseUser? = auth.currentUser
+    fun getCurrentUser(): FirebaseUser? = try { auth.currentUser } catch (e: Exception) { null }
 
     suspend fun signUp(username: String, email: String, pass: String): Result<FirebaseUser> {
         return try {
