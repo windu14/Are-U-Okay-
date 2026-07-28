@@ -4,14 +4,20 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.audio.AudioPreviewPlayer
 import com.example.audio.AudioPlayerState
-import com.example.data.local.AppDatabase
+import com.example.audio.AudioPreviewPlayer
+import com.example.data.local.AiChatMessage
 import com.example.data.local.JournalNote
 import com.example.data.local.SongFrequency
+import com.example.data.remote.GeminiApiService
+import com.example.data.remote.GeminiMessage
 import com.example.data.remote.ITunesApiService
 import com.example.data.remote.ITunesTrack
+import com.example.data.remote.UserProfile
+import com.example.data.repository.FirebaseRepository
 import com.example.data.repository.JournalRepository
+import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -20,36 +26,43 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-import com.example.data.local.AiChatMessage
-import com.example.data.remote.GeminiApiService
-import com.example.data.remote.GeminiMessage
-
+@OptIn(ExperimentalCoroutinesApi::class)
 class JournalViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: JournalRepository
+    private val firebaseRepository = FirebaseRepository()
+    private val iTunesApiService = ITunesApiService.create()
     private val geminiApiService = GeminiApiService()
     val audioPlayer: AudioPreviewPlayer
+
     private val _customApiKey = MutableStateFlow<String?>(null)
 
-    init {
-        val db = AppDatabase.getDatabase(application)
-        val api = ITunesApiService.create()
-        repository = JournalRepository(db.journalNoteDao(), api)
-        audioPlayer = AudioPreviewPlayer(application)
+    // Auth state
+    val currentUser: StateFlow<FirebaseUser?> = firebaseRepository.currentUserFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), firebaseRepository.getCurrentUser())
 
-        // Clear dummy seed data once so DB starts clean
-        val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("dummy_data_cleared_v2", false)) {
-            viewModelScope.launch {
-                repository.clearAllNotes()
-                prefs.edit().putBoolean("dummy_data_cleared_v2", true).apply()
-            }
+    val userProfile: StateFlow<UserProfile?> = currentUser.flatMapLatest { user ->
+        if (user != null) {
+            firebaseRepository.getUserProfileFlow(user.uid)
+        } else {
+            flowOf(null)
         }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    private val _authLoading = MutableStateFlow(false)
+    val authLoading: StateFlow<Boolean> = _authLoading.asStateFlow()
+
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    init {
+        audioPlayer = AudioPreviewPlayer(application)
+        val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val savedApiKey = prefs.getString("custom_gemini_api_key", null)
         if (!savedApiKey.isNullOrBlank()) {
             _customApiKey.value = savedApiKey
@@ -58,14 +71,42 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
     val playerState: StateFlow<AudioPlayerState> = audioPlayer.playerState
 
-    val allNotes: StateFlow<List<JournalNote>> = repository.allNotes
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // Firestore Notes state
+    private val _localCreatedNotes = MutableStateFlow<List<JournalNote>>(emptyList())
 
-    val recentNotes: StateFlow<List<JournalNote>> = repository.getRecentNotes(4)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val allNotes: StateFlow<List<JournalNote>> = combine(
+        firebaseRepository.getAllNotesFlow(),
+        _localCreatedNotes
+    ) { remoteNotes, localNotes ->
+        val unpostedLocal = localNotes.filter { local ->
+            remoteNotes.none { remote ->
+                remote.content == local.content && Math.abs(remote.timestamp - local.timestamp) < 10000
+            }
+        }
+        (unpostedLocal + remoteNotes).sortedByDescending { it.timestamp }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val topSongs: StateFlow<List<SongFrequency>> = repository.getTopAttachedSongs(3)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val recentNotes: StateFlow<List<JournalNote>> = allNotes.map { notes ->
+        notes.take(4)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val topSongs: StateFlow<List<SongFrequency>> = allNotes.map { notes ->
+        notes.filter { it.trackId != null }
+            .groupBy { it.trackId!! }
+            .map { (trackId, group) ->
+                val first = group.first()
+                SongFrequency(
+                    trackId = trackId,
+                    trackName = first.trackName ?: "",
+                    artistName = first.artistName ?: "",
+                    artworkUrl = first.artworkUrl ?: "",
+                    previewUrl = first.previewUrl ?: "",
+                    frequency = group.size
+                )
+            }
+            .sortedByDescending { it.frequency }
+            .take(3)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Category Filter for Global Curhat
     private val _selectedCategory = MutableStateFlow("Semuanya")
@@ -102,6 +143,57 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
     private var searchJob: Job? = null
 
+    // Authentication Actions
+    fun login(emailOrUsername: String, pass: String, onSuccess: () -> Unit) {
+        if (emailOrUsername.isBlank() || pass.isBlank()) {
+            _authError.value = "Mohon isi semua bidang formulir!"
+            return
+        }
+        _authLoading.value = true
+        _authError.value = null
+
+        viewModelScope.launch {
+            val result = firebaseRepository.login(emailOrUsername, pass)
+            _authLoading.value = false
+            result.onSuccess {
+                onSuccess()
+            }.onFailure { err ->
+                _authError.value = err.message ?: "Gagal masuk. Periksa kembali email/username & kata sandi."
+            }
+        }
+    }
+
+    fun signUp(username: String, email: String, pass: String, onSuccess: () -> Unit) {
+        if (username.isBlank() || email.isBlank() || pass.isBlank()) {
+            _authError.value = "Mohon isi semua bidang formulir!"
+            return
+        }
+        if (pass.length < 6) {
+            _authError.value = "Kata sandi minimal 6 karakter!"
+            return
+        }
+        _authLoading.value = true
+        _authError.value = null
+
+        viewModelScope.launch {
+            val result = firebaseRepository.signUp(username, email, pass)
+            _authLoading.value = false
+            result.onSuccess {
+                onSuccess()
+            }.onFailure { err ->
+                _authError.value = err.message ?: "Gagal mendaftar. Pastikan format email benar."
+            }
+        }
+    }
+
+    fun logout() {
+        firebaseRepository.logout()
+    }
+
+    fun clearAuthError() {
+        _authError.value = null
+    }
+
     fun setCategoryFilter(category: String) {
         _selectedCategory.value = category
     }
@@ -120,12 +212,13 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             delay(400) // Debounce typing
             _isSearching.value = true
             _searchError.value = null
-            val result = repository.searchSongs(query)
-            _isSearching.value = false
-            result.onSuccess { tracks ->
-                _searchResults.value = tracks
-            }.onFailure { err ->
+            try {
+                val response = iTunesApiService.searchSongs(term = query)
+                _searchResults.value = response.results
+            } catch (e: Exception) {
                 _searchError.value = "Gagal memuat lagu dari iTunes. Coba kata kunci lain."
+            } finally {
+                _isSearching.value = false
             }
         }
     }
@@ -149,7 +242,6 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     fun openSearchMusicSheet() {
         _showSearchMusicSheet.value = true
         if (_searchQuery.value.isBlank()) {
-            // Default initial search suggestions for Gen Z vibes
             updateSearchQuery("Hindia")
         }
     }
@@ -163,15 +255,60 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addNote(content: String, category: String, moodEmoji: String) {
+        val user = firebaseRepository.getCurrentUser() ?: currentUser.value
+        val profile = userProfile.value
+        val uid = user?.uid ?: ""
+        val username = profile?.username?.takeIf { it.isNotBlank() }
+            ?: user?.displayName?.takeIf { it.isNotBlank() }
+            ?: "Remaja Ceria"
+
+        val trackToAttach = _selectedTrack.value
+        val now = System.currentTimeMillis()
+        val newNote = JournalNote(
+            id = (now % Int.MAX_VALUE).toInt(),
+            docId = "",
+            userId = uid,
+            username = username,
+            content = content,
+            category = category,
+            moodEmoji = moodEmoji,
+            timestamp = now,
+            trackId = trackToAttach?.trackId,
+            trackName = trackToAttach?.trackName,
+            artistName = trackToAttach?.artistName,
+            artworkUrl = trackToAttach?.highResArtworkUrl ?: trackToAttach?.artworkUrl100,
+            previewUrl = trackToAttach?.previewUrl
+        )
+
+        _localCreatedNotes.value = listOf(newNote) + _localCreatedNotes.value
+
         viewModelScope.launch {
-            repository.addNote(
+            val result = firebaseRepository.addNote(
                 content = content,
                 category = category,
                 moodEmoji = moodEmoji,
-                selectedTrack = _selectedTrack.value
+                selectedTrack = trackToAttach,
+                uid = uid,
+                username = username
             )
+            result.onSuccess {
+                _selectedTrack.value = null
+            }.onFailure { err ->
+                android.util.Log.e("JournalViewModel", "Error saving note to Firestore", err)
+            }
             dismissAddNoteDialog()
             dismissSearchMusicSheet()
+        }
+    }
+
+    fun deleteNote(id: Int) {
+        val note = allNotes.value.find { it.id == id } ?: return
+        _localCreatedNotes.value = _localCreatedNotes.value.filter { it.id != id }
+        if (note.docId.isNotBlank()) {
+            val user = currentUser.value
+            viewModelScope.launch {
+                firebaseRepository.deleteNote(note.docId, user?.uid ?: "")
+            }
         }
     }
 
@@ -210,9 +347,8 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             val startTime = System.currentTimeMillis()
-            val minThinkingDelay = async { delay(3000L) } // 3 detik AI berpikir
+            val minThinkingDelay = async { delay(3000L) }
 
-            // Build GeminiMessage list for API history
             val history = _aiMessages.value.dropLast(1).map {
                 GeminiMessage(role = if (it.isUser) "user" else "model", text = it.text)
             }
@@ -223,7 +359,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                 apiKeyOverride = _customApiKey.value
             )
 
-            minThinkingDelay.await() // Pastikan durasi berpikir minimal 3 detik
+            minThinkingDelay.await()
             val durationMs = System.currentTimeMillis() - startTime
             val durationSecStr = java.lang.String.format(java.util.Locale.US, "%.1f", durationMs / 1000f)
 
@@ -248,20 +384,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun saveAiResponseToJournal(content: String, category: String = "Perjalanan Jati Diri", moodEmoji: String = "✨") {
-        viewModelScope.launch {
-            repository.addNote(
-                content = content,
-                category = category,
-                moodEmoji = moodEmoji,
-                selectedTrack = _selectedTrack.value
-            )
-        }
-    }
-
-    fun deleteNote(id: Int) {
-        viewModelScope.launch {
-            repository.deleteNote(id)
-        }
+        addNote(content, category, moodEmoji)
     }
 
     override fun onCleared() {

@@ -272,8 +272,8 @@ fun LinearWavyProgressIndicator(
     modifier: Modifier = Modifier,
     color: Color = PastelLavender,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    wavelength: Dp = 10.dp,
-    amplitude: Dp = 2.5.dp,
+    wavelength: Dp = 20.dp,
+    amplitude: Dp = 3.dp,
     strokeWidth: Dp = 2.5.dp
 ) {
     val density = LocalDensity.current

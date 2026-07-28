@@ -7,6 +7,9 @@ import androidx.room.PrimaryKey
 data class JournalNote(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val docId: String = "",
+    val userId: String = "",
+    val username: String = "",
     val content: String,
     val category: String, // e.g. "Asmara & Cinta", "Masalah Hidup", "Perjalanan Jati Diri", "Pendidikan & Sekolah"
     val moodEmoji: String, // e.g. "💔", "🥹", "🌧️", "✨", "❤️‍🔥", "🎓"

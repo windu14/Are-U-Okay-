@@ -11,7 +11,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
@@ -60,20 +58,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import com.example.audio.AudioPlayerState
+import com.example.data.remote.UserProfile
 import com.example.ui.screens.AiChatScreen
+import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.TentangScreen
 import com.example.ui.screens.WriteCurhatScreen
 import com.example.ui.theme.AreYouOkayTheme
@@ -99,7 +99,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppScreen(viewModel: JournalViewModel) {
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Teman AI, 2: Global Curhat, 3: Tentang
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val authLoading by viewModel.authLoading.collectAsStateWithLifecycle()
+    val authError by viewModel.authError.collectAsStateWithLifecycle()
+
+    if (currentUser == null) {
+        AuthScreen(
+            isLoading = authLoading,
+            errorMessage = authError,
+            onLogin = { emailOrUsername, pass ->
+                viewModel.login(emailOrUsername, pass) {}
+            },
+            onSignUp = { username, email, pass ->
+                viewModel.signUp(username, email, pass) {}
+            },
+            onClearError = { viewModel.clearAuthError() }
+        )
+        return
+    }
+
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Global Curhat, 2: Tentang, 3: Teman AI, 4: Write Curhat, 5: Profile Screen
     var isScreenLoading by remember { mutableStateOf(false) }
 
     val onSelectTab: (Int) -> Unit = { target ->
@@ -158,7 +178,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
                 }
 
-                // 4 Screen Bottom Navigation Bar
+                // Bottom Navigation Bar
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp
@@ -192,10 +212,10 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
 
                     NavigationBarItem(
-                        selected = selectedTab == 2,
+                        selected = selectedTab == 2 || selectedTab == 5,
                         onClick = { onSelectTab(2) },
                         icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
-                        label = { Text("Tentang", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text("Tentang", fontWeight = if (selectedTab == 2 || selectedTab == 5) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color(0xFF261833),
                             selectedTextColor = PastelLavender,
@@ -240,7 +260,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() }
                 )
 
-                2 -> TentangScreen()
+                2 -> TentangScreen(
+                    onOpenProfile = { onSelectTab(5) }
+                )
 
                 3 -> AiChatScreen(
                     messages = aiMessages,
@@ -265,9 +287,29 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onRemoveTrack = { viewModel.selectTrackForNote(null) },
                     onBackClick = { onSelectTab(0) }
                 )
+
+                5 -> {
+                    val currentUid = currentUser?.uid ?: ""
+                    val userNoteCount = allNotes.count { note ->
+                        currentUid.isEmpty() || note.userId == currentUid || note.userId.isEmpty() || note.userId.startsWith("anon_")
+                    }
+                    val totalCount = maxOf(userProfile?.totalCurhat ?: 0, userNoteCount)
+                    val effectiveProfile = userProfile?.copy(totalCurhat = totalCount) ?: UserProfile(
+                        uid = currentUid,
+                        username = currentUser?.displayName ?: "Pengguna",
+                        email = currentUser?.email ?: "",
+                        totalCurhat = totalCount
+                    )
+                    ProfileScreen(
+                        userProfile = effectiveProfile,
+                        totalCurhatCount = totalCount,
+                        onLogout = { viewModel.logout() },
+                        onBackClick = { onSelectTab(2) }
+                    )
+                }
             }
 
-            // Screen Transition Loading Overlay (4 Seconds)
+            // Screen Transition Loading Overlay (1.5 Seconds)
             if (isScreenLoading) {
                 ScreenTransitionLoadingOverlay()
             }
