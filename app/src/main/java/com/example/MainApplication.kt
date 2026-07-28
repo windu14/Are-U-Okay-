@@ -9,6 +9,10 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Safeguard icon resources against AGP resource shrinker in release builds
+        val masterIconRes = R.drawable.master_icon
+        val launcherRes = R.mipmap.ic_launcher
+        Log.d("MainApplication", "App icon resources initialized: $masterIconRes, $launcherRes")
         initFirebase()
     }
 

@@ -318,7 +318,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         audioPlayer.playPreview(previewUrl, title, artist, artworkUrl, cardId)
     }
 
-    fun addNote(content: String, category: String, moodEmoji: String) {
+    fun addNoteWithTrack(content: String, category: String, moodEmoji: String, trackToAttach: ITunesTrack? = null) {
         val user = firebaseRepository.getCurrentUser() ?: currentUser.value
         val profile = userProfile.value
         val uid = user?.uid ?: ""
@@ -326,7 +326,6 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             ?: user?.displayName?.takeIf { it.isNotBlank() }
             ?: "Remaja Ceria"
 
-        val trackToAttach = _selectedTrack.value
         val now = System.currentTimeMillis()
         val newNote = JournalNote(
             id = (now % Int.MAX_VALUE).toInt(),
@@ -363,6 +362,10 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             dismissAddNoteDialog()
             dismissSearchMusicSheet()
         }
+    }
+
+    fun addNote(content: String, category: String, moodEmoji: String) {
+        addNoteWithTrack(content, category, moodEmoji, _selectedTrack.value)
     }
 
     fun deleteNote(id: Int) {
@@ -411,16 +414,36 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             val startTime = System.currentTimeMillis()
-            val minThinkingDelay = async { delay(3000L) }
+            val minThinkingDelay = async { delay(2000L) }
 
             val history = _aiMessages.value.dropLast(1).map {
                 GeminiMessage(role = if (it.isUser) "user" else "model", text = it.text)
             }
 
+            // Collect app database & user context
+            val profile = userProfile.value
+            val user = currentUser.value
+            val userNameStr = profile?.username?.takeIf { it.isNotBlank() }
+                ?: user?.displayName?.takeIf { it.isNotBlank() }
+                ?: "Sahabat"
+
+            val notesList = allNotes.value
+            val notesCountInt = notesList.size
+            val recentNotesStr = notesList.take(3).joinToString("; ") {
+                "${it.moodEmoji} [${it.category}]: \"${it.content.take(50)}\""
+            }
+            val topSongsStr = topSongs.value.take(3).joinToString(", ") {
+                "${it.trackName} - ${it.artistName}"
+            }
+
             val result = geminiApiService.sendMessage(
                 chatHistory = history,
                 userPrompt = prompt,
-                apiKeyOverride = _customApiKey.value
+                apiKeyOverride = _customApiKey.value,
+                userName = userNameStr,
+                notesCount = notesCountInt,
+                recentNotesSummary = recentNotesStr,
+                topSongsSummary = topSongsStr
             )
 
             minThinkingDelay.await()
@@ -429,11 +452,53 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
             _isAiThinking.value = false
 
-            result.onSuccess { responseText ->
+            result.onSuccess { rawResponseText ->
+                var cleanText = rawResponseText
+                var actionSaved = false
+                var attachedSongStr: String? = null
+
+                // Detect and process automatic action tag: [ACTION_CREATE_NOTE: {...}]
+                val tagStart = rawResponseText.indexOf("[ACTION_CREATE_NOTE:")
+                if (tagStart != -1) {
+                    val tagEnd = rawResponseText.indexOf("]", tagStart)
+                    if (tagEnd != -1) {
+                        val fullTag = rawResponseText.substring(tagStart, tagEnd + 1)
+                        cleanText = rawResponseText.replace(fullTag, "").trim()
+                        val jsonContent = fullTag.removePrefix("[ACTION_CREATE_NOTE:").removeSuffix("]").trim()
+
+                        try {
+                            val json = org.json.JSONObject(jsonContent)
+                            val noteContent = json.optString("content", "").ifBlank { cleanText }
+                            val category = json.optString("category", "Perjalanan Jati Diri")
+                            val moodEmoji = json.optString("moodEmoji", "✨")
+                            val songTitle = json.optString("songTitle", "")
+                            val artistName = json.optString("artistName", "")
+
+                            if (songTitle.isNotBlank()) {
+                                attachedSongStr = if (artistName.isNotBlank()) "$songTitle - $artistName" else songTitle
+                                try {
+                                    val searchResp = iTunesApiService.searchSongs(term = "$songTitle $artistName", limit = 1)
+                                    val track = searchResp.results.firstOrNull()
+                                    addNoteWithTrack(noteContent, category, moodEmoji, track)
+                                } catch (e: Exception) {
+                                    addNoteWithTrack(noteContent, category, moodEmoji, null)
+                                }
+                            } else {
+                                addNoteWithTrack(noteContent, category, moodEmoji, null)
+                            }
+                            actionSaved = true
+                        } catch (e: Exception) {
+                            android.util.Log.e("JournalViewModel", "Failed to parse action tag JSON", e)
+                        }
+                    }
+                }
+
                 val aiMsg = AiChatMessage(
-                    text = responseText,
+                    text = cleanText,
                     isUser = false,
-                    thinkingTimeSec = durationSecStr
+                    thinkingTimeSec = durationSecStr,
+                    actionNoteSaved = actionSaved,
+                    attachedSongName = attachedSongStr
                 )
                 _aiMessages.value = _aiMessages.value + aiMsg
             }.onFailure { err ->

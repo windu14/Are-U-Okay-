@@ -53,3 +53,8 @@
 -keep class coil.** { *; }
 -dontwarn coil.**
 
+# Keep App Launcher Icons & Resources
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+

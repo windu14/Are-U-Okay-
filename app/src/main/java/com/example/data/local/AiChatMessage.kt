@@ -9,5 +9,7 @@ data class AiChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val category: String? = null, // e.g. "Asmara & Cinta", "Pendidikan & Sekolah"
     val suggestedMood: String? = null, // e.g. "💔", "🥹", "✨"
-    val thinkingTimeSec: String? = null // e.g. "1.8"
+    val thinkingTimeSec: String? = null, // e.g. "1.8"
+    val actionNoteSaved: Boolean = false,
+    val attachedSongName: String? = null
 )

@@ -124,11 +124,12 @@ fun AiChatScreen(
     }
 
     val suggestionChips = listOf(
-        "💔 Curhat Dia Makin Dingin",
-        "🎓 Pusing Tugas & Ekspektasi",
-        "🌧️ Galau & Merasa Kesepian",
-        "🎵 Rekomendasi Lagu Sad Vibes",
-        "📝 Rangkum Curhatanku ke Catatan"
+        "💔 Curhat & Koping Cemas",
+        "📜 Renungan Filosofi Stoikisme",
+        "📝 Buatkan Curhatan + Lagu ke Catatan",
+        "🎵 Rekomendasi Lagu Penenang Jiwa",
+        "🌸 Arti Penderitaan (Frankl)",
+        "🧘 Panduan Pernapasan 4-7-8"
     )
 
     Column(
@@ -185,7 +186,7 @@ fun AiChatScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Ngobrol Mochibot",
+                                text = "Mochibot AI",
                                 fontFamily = PlayfairBoldFamily,
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
@@ -197,7 +198,7 @@ fun AiChatScreen(
                                 color = PastelLavender.copy(alpha = 0.2f)
                             ) {
                                 Text(
-                                    text = "Gen Z",
+                                    text = "Psikologi & Filosofi",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = PastelLavender,
                                     fontWeight = FontWeight.Bold,
@@ -215,7 +216,7 @@ fun AiChatScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isThinking) "Mochibot lagi dengerin....." else "Online & Siap Mendengar",
+                                text = if (isThinking) "Mochibot lagi merenung & mendengarkan..." else "Sahabat Empatik & Cerdas Active",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -512,6 +513,37 @@ fun ChatBubbleItem(
                     lineHeight = 22.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                if (message.actionNoteSaved) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = PastelMint.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PastelMint)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color(0xFF2E7D32),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (!message.attachedSongName.isNullOrEmpty()) 
+                                    "✨ Otomatis tersimpan ke Catatan (+ 🎵 ${message.attachedSongName})"
+                                else 
+                                    "✨ Otomatis tersimpan ke Catatan Curhat!",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF1B5E20),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
