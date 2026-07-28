@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Release APK
 
 on:
   push:
@@ -9,8 +9,11 @@ on:
 
 jobs:
   build:
-    name: Build Debug APK
+    name: Build Release APK
     runs-on: ubuntu-latest
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx4096m -XX:+UseParallelGC' -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
 
     steps:
       - name: Checkout Code
@@ -28,14 +31,19 @@ jobs:
             cp .env.example .env
           fi
 
-      - name: Ensure Debug Keystore
+      - name: Ensure Keystore Setup
         run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Decoding release keystore from secrets..."
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks || echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks || true
+          fi
+
           if [ -f debug.keystore.base64 ]; then
             echo "Decoding debug.keystore.base64..."
             base64 -d debug.keystore.base64 > debug.keystore || base64 --decode debug.keystore.base64 > debug.keystore || true
           fi
           if [ ! -s debug.keystore ]; then
-            echo "Generating fallback debug.keystore using keytool..."
+            echo "Generating debug.keystore fallback..."
             keytool -genkeypair -v \
               -keystore debug.keystore \
               -storepass android \
@@ -46,17 +54,19 @@ jobs:
               -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US"
           fi
-          ls -la debug.keystore
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: false
 
-      - name: Build Debug APK with Gradle
-        run: gradle assembleDebug --stacktrace
+      - name: Build Release APK with ProGuard
+        run: gradle assembleRelease --stacktrace
 
-      - name: Upload APK Artifact
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AreYouOkay-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: AreYouOkay-Release-APK
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
