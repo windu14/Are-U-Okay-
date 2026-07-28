@@ -32,8 +32,10 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -57,6 +59,8 @@ import com.example.ui.theme.PastelRose
 @Composable
 fun TentangScreen(
     onOpenProfile: () -> Unit = {},
+    onCheckUpdate: () -> Unit = {},
+    isCheckingUpdate: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -101,7 +105,7 @@ fun TentangScreen(
                 )
 
                 Text(
-                    text = "A Safe Space for Gen Z & Teens • Versi 1.0.0",
+                    text = "A Safe Space for Gen Z & Teens • Versi ${com.example.BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.labelLarge,
                     color = PastelRose,
                     fontWeight = FontWeight.SemiBold,
@@ -323,6 +327,80 @@ fun TentangScreen(
                         color = Color(0xFF261833),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                     )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Check Update Action Card (Positioned directly below Profile Card)
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            onClick = {
+                if (!isCheckingUpdate) onCheckUpdate()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Surface(
+                        shape = CircleShape,
+                        color = PastelMint.copy(alpha = 0.2f),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = "Cek Update",
+                                tint = PastelMint,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Cek Pembaruan Aplikasi",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Versi Terpasang: v${com.example.BuildConfig.VERSION_NAME}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = CircleShape,
+                    color = PastelMint
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        if (isCheckingUpdate) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF142E25),
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Cek Update",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF142E25)
+                            )
+                        }
+                    }
                 }
             }
         }

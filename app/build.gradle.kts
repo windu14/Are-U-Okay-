@@ -17,8 +17,8 @@ android {
     applicationId = "com.windulab.areuokay"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 18
+    versionName = System.getenv("VERSION_NAME")?.removePrefix("v") ?: "1.0.18"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

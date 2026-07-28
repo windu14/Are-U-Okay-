@@ -2,6 +2,7 @@ package com.example.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.audio.AudioPlayerState
@@ -75,6 +76,9 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
     private val _downloadError = MutableStateFlow<String?>(null)
     val downloadError: StateFlow<String?> = _downloadError.asStateFlow()
+
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
 
     init {
         audioPlayer = AudioPreviewPlayer(application)
@@ -447,11 +451,19 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         addNote(content, category, moodEmoji)
     }
 
-    fun checkAppUpdates() {
+    fun checkAppUpdates(manual: Boolean = false, context: Context? = null) {
         viewModelScope.launch {
+            _isCheckingUpdate.value = true
             val info = updateManager.checkForUpdates()
+            _isCheckingUpdate.value = false
             if (info != null && info.isUpdateAvailable) {
                 _appUpdateInfo.value = info
+            } else if (manual && context != null) {
+                if (info != null && !info.isUpdateAvailable) {
+                    Toast.makeText(context, "Aplikasi Anda sudah versi terbaru (v${com.example.BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Gagal memeriksa pembaruan. Periksa koneksi internet Anda.", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

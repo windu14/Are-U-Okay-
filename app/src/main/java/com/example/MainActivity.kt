@@ -193,6 +193,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     val isDownloadingUpdate by viewModel.isDownloadingUpdate.collectAsStateWithLifecycle()
     val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
     val downloadError by viewModel.downloadError.collectAsStateWithLifecycle()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsStateWithLifecycle()
 
     val aiMessages by viewModel.aiMessages.collectAsStateWithLifecycle()
     val isAiThinking by viewModel.isAiThinking.collectAsStateWithLifecycle()
@@ -306,7 +307,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                 )
 
                 2 -> TentangScreen(
-                    onOpenProfile = { onSelectTab(5) }
+                    onOpenProfile = { onSelectTab(5) },
+                    onCheckUpdate = { viewModel.checkAppUpdates(manual = true, context = context) },
+                    isCheckingUpdate = isCheckingUpdate
                 )
 
                 3 -> AiChatScreen(

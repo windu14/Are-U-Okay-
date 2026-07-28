@@ -62,21 +62,6 @@ jobs:
         with:
           cache-disabled: false
 
-      - name: Build Release APK with ProGuard
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle assembleRelease --stacktrace
-
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AreYouOkay-Release-APK
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-
       - name: Determine Release Tag
         id: release_tag
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
@@ -87,6 +72,23 @@ jobs:
             TAG_NAME="v1.0.${{ github.run_number }}"
           fi
           echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build Release APK with ProGuard
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          VERSION_NAME: ${{ steps.release_tag.outputs.tag }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: gradle assembleRelease --stacktrace
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AreYouOkay-Release-APK
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
 
       - name: Create or Update Tag
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
