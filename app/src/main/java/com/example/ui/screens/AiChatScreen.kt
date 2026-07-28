@@ -515,30 +515,30 @@ fun ChatBubbleItem(
                 )
 
                 if (message.actionNoteSaved) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelMint.copy(alpha = 0.35f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PastelMint)
+                        shape = CircleShape,
+                        color = PastelLavender.copy(alpha = 0.2f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.6f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                tint = Color(0xFF2E7D32),
+                                tint = PastelLavender,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = if (!message.attachedSongName.isNullOrEmpty()) 
-                                    "✨ Otomatis tersimpan ke Catatan (+ 🎵 ${message.attachedSongName})"
+                                    "✨ Otomatis tersimpan ke Catatan Curhat (+ 🎵 ${message.attachedSongName})"
                                 else 
                                     "✨ Otomatis tersimpan ke Catatan Curhat!",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF1B5E20),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold
                             )
                         }

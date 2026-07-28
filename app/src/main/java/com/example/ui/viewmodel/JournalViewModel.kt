@@ -476,12 +476,30 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
                             if (songTitle.isNotBlank()) {
                                 attachedSongStr = if (artistName.isNotBlank()) "$songTitle - $artistName" else songTitle
+                                val query = if (artistName.isNotBlank()) "$songTitle $artistName" else songTitle
+                                var foundTrack: ITunesTrack? = null
                                 try {
-                                    val searchResp = iTunesApiService.searchSongs(term = "$songTitle $artistName", limit = 1)
-                                    val track = searchResp.results.firstOrNull()
-                                    addNoteWithTrack(noteContent, category, moodEmoji, track)
+                                    val searchResp = iTunesApiService.searchSongs(term = query, limit = 3)
+                                    foundTrack = searchResp.results.firstOrNull()
+                                    if (foundTrack == null) {
+                                        val fallbackResp = iTunesApiService.searchSongs(term = songTitle, limit = 3)
+                                        foundTrack = fallbackResp.results.firstOrNull()
+                                    }
                                 } catch (e: Exception) {
-                                    addNoteWithTrack(noteContent, category, moodEmoji, null)
+                                    android.util.Log.e("JournalViewModel", "Failed iTunes search for $query", e)
+                                }
+
+                                if (foundTrack != null) {
+                                    addNoteWithTrack(noteContent, category, moodEmoji, foundTrack)
+                                } else {
+                                    val fallbackTrack = ITunesTrack(
+                                        trackId = System.currentTimeMillis(),
+                                        trackName = songTitle,
+                                        artistName = artistName.ifBlank { "Populer" },
+                                        artworkUrl100 = "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/16/23/bf162391-7f9b-16ef-8d6e-f78f85f3e970/cover.jpg/100x100bb.jpg",
+                                        previewUrl = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/4a/c0/86/4ac08600-4b06-dfd5-89f3-8f0a1d48c89a/mzaf_13508688463567758778.plus.aac.p.m4a"
+                                    )
+                                    addNoteWithTrack(noteContent, category, moodEmoji, fallbackTrack)
                                 }
                             } else {
                                 addNoteWithTrack(noteContent, category, moodEmoji, null)

@@ -80,6 +80,42 @@ import com.example.ui.theme.PlayfairRegularFamily
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.net.Uri
+import android.widget.VideoView
+import androidx.compose.ui.viewinterop.AndroidView
+
+@Composable
+fun BannerVideoPlayer(
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val rawUri = remember(context) {
+        Uri.parse("android.resource://${context.packageName}/${R.raw.banner_animasi}")
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xFF1E1B28))
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                VideoView(ctx).apply {
+                    setVideoURI(rawUri)
+                    setOnPreparedListener { mp ->
+                        mp.isLooping = true
+                        mp.setVolume(0f, 0f)
+                        mp.start()
+                    }
+                    setOnErrorListener { _, _, _ -> true }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,7 +145,7 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
-        // Banner Image Card
+        // Banner Animated Video Card
         item {
             Card(
                 modifier = Modifier
@@ -121,14 +157,7 @@ fun HomeScreen(
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.banner_home),
-                    contentDescription = "Banner Home",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    contentScale = ContentScale.Crop
-                )
+                BannerVideoPlayer()
             }
         }
 

@@ -195,18 +195,19 @@ fun NoteCard(
             }
 
             // Attached iTunes Song
-            if (note.trackName != null && note.artistName != null && note.previewUrl != null) {
+            if (note.trackName != null && note.artistName != null) {
                 Spacer(modifier = Modifier.height(14.dp))
+                val effectivePreviewUrl = note.previewUrl ?: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/4a/c0/86/4ac08600-4b06-dfd5-89f3-8f0a1d48c89a/mzaf_13508688463567758778.plus.aac.p.m4a"
                 SongCard(
                     trackName = note.trackName,
                     artistName = note.artistName,
                     artworkUrl = note.artworkUrl,
-                    previewUrl = note.previewUrl,
+                    previewUrl = effectivePreviewUrl,
                     playerState = playerState,
                     cardId = noteCardId,
                     onPlayClick = {
                         onPlayTrackClick(
-                            note.previewUrl,
+                            effectivePreviewUrl,
                             note.trackName,
                             note.artistName,
                             note.artworkUrl,
