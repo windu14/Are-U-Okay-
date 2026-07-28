@@ -454,15 +454,25 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     fun checkAppUpdates(manual: Boolean = false, context: Context? = null) {
         viewModelScope.launch {
             _isCheckingUpdate.value = true
-            val info = updateManager.checkForUpdates()
+            val result = updateManager.checkForUpdatesDetailed()
             _isCheckingUpdate.value = false
-            if (info != null && info.isUpdateAvailable) {
-                _appUpdateInfo.value = info
-            } else if (manual && context != null) {
-                if (info != null && !info.isUpdateAvailable) {
-                    Toast.makeText(context, "Aplikasi Anda sudah versi terbaru (v${com.example.BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Gagal memeriksa pembaruan. Periksa koneksi internet Anda.", Toast.LENGTH_SHORT).show()
+
+            when (result) {
+                is com.example.util.UpdateCheckResult.Success -> {
+                    _appUpdateInfo.value = result.updateInfo
+                    if (manual && context != null) {
+                        Toast.makeText(context, "Pembaruan versi ${result.updateInfo.latestVersionName} ditemukan!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is com.example.util.UpdateCheckResult.UpToDate -> {
+                    if (manual && context != null) {
+                        Toast.makeText(context, "Aplikasi Anda sudah versi terbaru (v${com.example.BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is com.example.util.UpdateCheckResult.Error -> {
+                    if (manual && context != null) {
+                        Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
