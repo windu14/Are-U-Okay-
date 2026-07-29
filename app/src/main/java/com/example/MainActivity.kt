@@ -84,6 +84,15 @@ import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val attributionContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && newBase.attributionTag == null) {
+            newBase.createAttributionContext("default")
+        } else {
+            newBase
+        }
+        super.attachBaseContext(attributionContext)
+    }
+
     private val viewModel: JournalViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -163,7 +172,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
 
     LaunchedEffect(isScreenLoading) {
         if (isScreenLoading) {
-            delay(1500L)
+            delay(1000L)
             isScreenLoading = false
         }
     }

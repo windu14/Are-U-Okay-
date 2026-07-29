@@ -30,6 +30,12 @@ data class AudioPlayerState(
 
 class AudioPreviewPlayer(private val context: Context) {
 
+    private val safeContext: Context = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && context.attributionTag == null) {
+        context.createAttributionContext("default")
+    } else {
+        context
+    }
+
     private var mediaPlayer: MediaPlayer? = null
     private val scope = CoroutineScope(Dispatchers.Main)
     private var progressJob: Job? = null
@@ -75,7 +81,7 @@ class AudioPreviewPlayer(private val context: Context) {
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .build()
                 )
-                setDataSource(context, android.net.Uri.parse(previewUrl))
+                setDataSource(safeContext, android.net.Uri.parse(previewUrl))
                 setOnPreparedListener { mp ->
                     _playerState.update { it.copy(isBuffering = false, isPlaying = true, durationMs = mp.duration) }
                     mp.start()

@@ -1,11 +1,22 @@
 package com.example
 
 import android.app.Application
+import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 
 class MainApplication : Application() {
+
+    override fun attachBaseContext(base: Context) {
+        val attributionContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && base.attributionTag == null) {
+            base.createAttributionContext("default")
+        } else {
+            base
+        }
+        super.attachBaseContext(attributionContext)
+    }
 
     override fun onCreate() {
         super.onCreate()
