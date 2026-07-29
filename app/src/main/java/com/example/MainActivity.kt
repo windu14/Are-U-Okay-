@@ -163,6 +163,27 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     }
 
     val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP,
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
+                    viewModel.audioPlayer.pause()
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_DESTROY -> {
+                    viewModel.audioPlayer.release()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.audioPlayer.pause()
+        }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Home, 1: Global Curhat, 2: Tentang, 3: Teman AI, 4: Write Curhat, 5: Profile Screen
     var isScreenLoading by remember { mutableStateOf(false) }
 
@@ -557,15 +578,6 @@ fun MiniPlayerBar(
 
 @Composable
 fun ScreenTransitionLoadingOverlay() {
-    val context = LocalContext.current
-    val imageLoader = remember(context) {
-        ImageLoader.Builder(context)
-            .components {
-                add(SvgDecoder.Factory())
-            }
-            .build()
-    }
-
     val infiniteTransition = rememberInfiniteTransition(label = "screen_transition_rotation")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -587,7 +599,6 @@ fun ScreenTransitionLoadingOverlay() {
         AsyncImage(
             model = "file:///android_asset/loading.svg",
             contentDescription = "Loading...",
-            imageLoader = imageLoader,
             modifier = Modifier
                 .size(180.dp)
                 .rotate(angle)

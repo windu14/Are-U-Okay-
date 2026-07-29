@@ -605,15 +605,6 @@ fun ChatBubbleItem(
 
 @Composable
 fun ThinkingIndicatorBubble() {
-    val context = LocalContext.current
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components {
-                add(SvgDecoder.Factory())
-            }
-            .build()
-    }
-
     val infiniteTransition = rememberInfiniteTransition(label = "ai_thinking_rotation")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -644,7 +635,6 @@ fun ThinkingIndicatorBubble() {
                 AsyncImage(
                     model = "file:///android_asset/loading.svg",
                     contentDescription = "Loading...",
-                    imageLoader = imageLoader,
                     modifier = Modifier
                         .size(24.dp)
                         .rotate(angle)

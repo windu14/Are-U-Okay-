@@ -4,10 +4,18 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.SvgDecoder
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
-class MainApplication : Application() {
+class MainApplication : Application(), ImageLoaderFactory {
 
     override fun attachBaseContext(base: Context) {
         val attributionContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && base.attributionTag == null) {
@@ -25,6 +33,37 @@ class MainApplication : Application() {
         val launcherRes = R.mipmap.ic_launcher
         Log.d("MainApplication", "App icon resources initialized: $masterIconRes, $launcherRes")
         initFirebase()
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+
+        return ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .strongReferencesEnabled(true)
+                    .weakReferencesEnabled(true)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache"))
+                    .maxSizeBytes(100L * 1024L * 1024L) // 100 MB disk cache
+                    .build()
+            }
+            .components {
+                add(SvgDecoder.Factory())
+            }
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .crossfade(true)
+            .respectCacheHeaders(false)
+            .build()
     }
 
     private fun initFirebase() {

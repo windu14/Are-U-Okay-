@@ -57,7 +57,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
@@ -92,8 +96,58 @@ fun BannerVideoPlayer(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val rawUri = remember(context) {
         Uri.parse("android.resource://${context.packageName}/${R.raw.banner_animasi}")
+    }
+
+    var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE,
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                    try {
+                        if (mediaPlayerRef?.isPlaying == true) {
+                            mediaPlayerRef?.pause()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    try {
+                        if (mediaPlayerRef != null && mediaPlayerRef?.isPlaying == false) {
+                            mediaPlayerRef?.start()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_DESTROY -> {
+                    try {
+                        mediaPlayerRef?.stop()
+                        mediaPlayerRef?.release()
+                        mediaPlayerRef = null
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            try {
+                mediaPlayerRef?.stop()
+                mediaPlayerRef?.release()
+                mediaPlayerRef = null
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     Box(
@@ -107,11 +161,10 @@ fun BannerVideoPlayer(
             factory = { ctx ->
                 TextureView(ctx).apply {
                     surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                        private var mediaPlayer: MediaPlayer? = null
-
                         override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
                             try {
-                                mediaPlayer = MediaPlayer().apply {
+                                mediaPlayerRef?.release()
+                                mediaPlayerRef = MediaPlayer().apply {
                                     setDataSource(ctx, rawUri)
                                     setSurface(Surface(surface))
                                     isLooping = true
@@ -128,9 +181,9 @@ fun BannerVideoPlayer(
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                             try {
-                                mediaPlayer?.stop()
-                                mediaPlayer?.release()
-                                mediaPlayer = null
+                                mediaPlayerRef?.stop()
+                                mediaPlayerRef?.release()
+                                mediaPlayerRef = null
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
@@ -161,15 +214,6 @@ fun HomeScreen(
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val svgImageLoader = remember(context) {
-        ImageLoader.Builder(context)
-            .components {
-                add(SvgDecoder.Factory())
-            }
-            .build()
-    }
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 100.dp)
@@ -210,7 +254,6 @@ fun HomeScreen(
                 AsyncImage(
                     model = "file:///android_asset/bg_cards_a.svg",
                     contentDescription = null,
-                    imageLoader = svgImageLoader,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -317,7 +360,6 @@ fun HomeScreen(
                     AsyncImage(
                         model = "file:///android_asset/header_ai.svg",
                         contentDescription = "Teman Curhat AI",
-                        imageLoader = svgImageLoader,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -452,6 +494,23 @@ fun HomeScreen(
                             )
                         }
                     }
+                }
+
+                // Banner Kolaborasi Card
+                Spacer(modifier = Modifier.height(20.dp))
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.banner_kolaborasi),
+                        contentDescription = "Banner Kolaborasi",
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.FillWidth
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

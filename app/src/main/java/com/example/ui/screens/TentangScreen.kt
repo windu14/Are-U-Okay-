@@ -47,6 +47,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,7 @@ fun TentangScreen(
     isCheckingUpdate: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val uriHandler = LocalUriHandler.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -554,6 +557,55 @@ fun TentangScreen(
                     .wrapContentHeight(),
                 contentScale = ContentScale.Fit
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Social Media Logos (Instagram & GitHub)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Instagram Logo
+            IconButton(
+                onClick = {
+                    try {
+                        uriHandler.openUri("https://www.instagram.com/imwindu")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo_ig),
+                    contentDescription = "Instagram imwindu",
+                    modifier = Modifier.size(36.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(modifier = Modifier.width(20.dp))
+
+            // GitHub Logo
+            IconButton(
+                onClick = {
+                    try {
+                        uriHandler.openUri("https://github.com/windu14/AreYouOkay")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo_github),
+                    contentDescription = "GitHub Repository",
+                    modifier = Modifier.size(36.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }

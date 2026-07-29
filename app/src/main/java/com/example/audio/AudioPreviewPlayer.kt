@@ -113,21 +113,29 @@ class AudioPreviewPlayer(private val context: Context) {
     }
 
     fun pause() {
-        mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.pause()
-                _playerState.update { state -> state.copy(isPlaying = false) }
+        try {
+            mediaPlayer?.let {
+                if (it.isPlaying) {
+                    it.pause()
+                    _playerState.update { state -> state.copy(isPlaying = false) }
+                }
             }
+        } catch (e: Exception) {
+            Log.e("AudioPreviewPlayer", "Error pausing player", e)
         }
     }
 
     fun resume() {
-        mediaPlayer?.let {
-            if (!it.isPlaying) {
-                it.start()
-                _playerState.update { state -> state.copy(isPlaying = true) }
-                startProgressTracker()
+        try {
+            mediaPlayer?.let {
+                if (!it.isPlaying) {
+                    it.start()
+                    _playerState.update { state -> state.copy(isPlaying = true) }
+                    startProgressTracker()
+                }
             }
+        } catch (e: Exception) {
+            Log.e("AudioPreviewPlayer", "Error resuming player", e)
         }
     }
 
