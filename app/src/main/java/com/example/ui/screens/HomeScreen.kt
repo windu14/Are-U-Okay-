@@ -81,7 +81,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.net.Uri
-import android.widget.VideoView
+import android.graphics.SurfaceTexture
+import android.media.MediaPlayer
+import android.view.Surface
+import android.view.TextureView
 import androidx.compose.ui.viewinterop.AndroidView
 
 @Composable
@@ -102,14 +105,40 @@ fun BannerVideoPlayer(
     ) {
         AndroidView(
             factory = { ctx ->
-                VideoView(ctx).apply {
-                    setVideoURI(rawUri)
-                    setOnPreparedListener { mp ->
-                        mp.isLooping = true
-                        mp.setVolume(0f, 0f)
-                        mp.start()
+                TextureView(ctx).apply {
+                    surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                        private var mediaPlayer: MediaPlayer? = null
+
+                        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+                            try {
+                                mediaPlayer = MediaPlayer().apply {
+                                    setDataSource(ctx, rawUri)
+                                    setSurface(Surface(surface))
+                                    isLooping = true
+                                    setVolume(0f, 0f)
+                                    setOnPreparedListener { mp -> mp.start() }
+                                    prepareAsync()
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+
+                        override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
+                        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                            try {
+                                mediaPlayer?.stop()
+                                mediaPlayer?.release()
+                                mediaPlayer = null
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            return true
+                        }
+
+                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
                     }
-                    setOnErrorListener { _, _, _ -> true }
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -146,7 +175,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         // Banner Animated Video Card
-        item {
+        item(key = "banner_video", contentType = "banner_video") {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,7 +191,7 @@ fun HomeScreen(
         }
 
         // Header Card Banner
-        item {
+        item(key = "header_banner", contentType = "header_card") {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -268,7 +297,7 @@ fun HomeScreen(
         }
 
         // Teman AI Card Banner (Clickable header_ai.svg banner directly below are you okay card)
-        item {
+        item(key = "ai_banner", contentType = "ai_card") {
             Card(
                 onClick = onOpenAiChat,
                 shape = RoundedCornerShape(26.dp),
@@ -297,7 +326,7 @@ fun HomeScreen(
         }
 
         // Section 1: Top 3 Frequently Attached Songs
-        item {
+        item(key = "top_songs_header", contentType = "section_header") {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -337,7 +366,11 @@ fun HomeScreen(
             }
         }
 
-        itemsIndexed(topSongs, key = { _, item -> item.trackId }) { index, song ->
+        itemsIndexed(
+            topSongs,
+            key = { _, item -> "top_song_${item.trackId}" },
+            contentType = { _, _ -> "top_song_card" }
+        ) { index, song ->
             val topCardId = "top_${song.trackId}"
             Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 SongCard(
@@ -363,7 +396,7 @@ fun HomeScreen(
         }
 
         // Section 2: Top 4 Recent Curhatan / Notes (M3 Expressive Multi-Browse Carousel)
-        item {
+        item(key = "recent_notes_section", contentType = "carousel_section") {
             Spacer(modifier = Modifier.height(20.dp))
             Column {
                 Row(

@@ -208,7 +208,7 @@ fun GlobalCurhatScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(notes, key = { it.id }) { note ->
+                    items(notes, key = { it.id }, contentType = { "note_card" }) { note ->
                         NoteCard(
                             note = note,
                             playerState = playerState,

@@ -128,7 +128,10 @@ class MainActivity : ComponentActivity() {
                 android.util.Log.e("MainActivity", "Explicit FirebaseApp init exception", ex)
             }
         }
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             AreYouOkayTheme {
                 MainAppScreen(viewModel = viewModel)
@@ -211,7 +214,11 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
                 // Persistent Player Bar when audio is loaded or playing
                 if (playerState.currentPreviewUrl != null) {
                     MiniPlayerBar(
