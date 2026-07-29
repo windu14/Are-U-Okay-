@@ -68,9 +68,13 @@ fun GlobalCurhatScreen(
     val listState = rememberLazyListState()
 
     val todayCount = remember(notes) {
-        val now = System.currentTimeMillis()
-        val twentyFourHoursAgo = now - 24 * 60 * 60 * 1000L
-        notes.count { it.timestamp >= twentyFourHoursAgo || DateUtils.isToday(it.timestamp) }
+        val startOfToday = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        notes.count { it.timestamp >= startOfToday }
     }
 
     Box(modifier = modifier.fillMaxSize()) {

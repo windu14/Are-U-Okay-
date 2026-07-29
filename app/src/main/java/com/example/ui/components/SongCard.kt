@@ -96,29 +96,26 @@ fun SongCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Rank badge if present
+                    // Rank badge if present (Netflix Style Big Top Number)
                     if (rankIndex != null) {
-                        Surface(
-                            shape = CircleShape,
-                            color = when (rankIndex) {
-                                1 -> PastelRose
-                                2 -> PastelLavender
-                                else -> PastelMint
-                            },
-                            contentColor = Color(0xFF261833),
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(28.dp)
-                                .padding(end = 6.dp)
+                                .padding(start = 2.dp, end = 8.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "#$rankIndex",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            Text(
+                                text = "$rankIndex",
+                                fontSize = 44.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-2).sp,
+                                lineHeight = 44.sp,
+                                color = when (rankIndex) {
+                                    1 -> PastelRose
+                                    2 -> PastelLavender
+                                    else -> PastelMint
+                                }
+                            )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
                     }
 
                     // Album Artwork

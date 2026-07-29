@@ -576,17 +576,17 @@ fun TentangScreen(
                         e.printStackTrace()
                     }
                 },
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo_ig),
                     contentDescription = "Instagram imwindu",
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(48.dp),
                     contentScale = ContentScale.Fit
                 )
             }
 
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(24.dp))
 
             // GitHub Logo
             IconButton(
@@ -597,12 +597,12 @@ fun TentangScreen(
                         e.printStackTrace()
                     }
                 },
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo_github),
                     contentDescription = "GitHub Repository",
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(48.dp),
                     contentScale = ContentScale.Fit
                 )
             }

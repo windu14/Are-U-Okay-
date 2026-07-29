@@ -165,8 +165,21 @@ fun UpdateDialog(
                                 .height(90.dp)
                                 .verticalScroll(rememberScrollState())
                         ) {
+                            val cleanNotes = updateInfo.releaseNotes.lines()
+                                .map { it.trim() }
+                                .filter { line ->
+                                    line.isNotBlank() &&
+                                    !line.contains("Full Changelog", ignoreCase = true) &&
+                                    !line.startsWith("http://", ignoreCase = true) &&
+                                    !line.startsWith("https://", ignoreCase = true)
+                                }
+                            val displayText = if (cleanNotes.isNotEmpty()) {
+                                cleanNotes.joinToString("\n")
+                            } else {
+                                "• Perbaikan performa & kestabilan aplikasi\n• Peningkatan sistem cache media & audio\n• Animasi transisi & pembaruan UI"
+                            }
                             Text(
-                                text = updateInfo.releaseNotes.ifBlank { "Peningkatan performa dan perbaikan bug." },
+                                text = displayText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 18.sp

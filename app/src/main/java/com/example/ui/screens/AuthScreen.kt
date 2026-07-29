@@ -1,8 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -178,85 +183,131 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Form Card
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = if (isLoginMode) "Masuk ke Akunmu 👋" else "Daftar Akun Baru 🌟",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                if (!errorMessage.isNullOrBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelRose.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PastelRose)
-                    ) {
-                        Text(
-                            text = errorMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PastelRose,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-
-                if (!isLoginMode) {
-                    // Sign Up: Username Input
-                    OutlinedTextField(
-                        value = usernameInput,
-                        onValueChange = { usernameInput = it },
-                        label = { Text("Username") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = PastelLavender)
-                        },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PastelLavender,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = PastelLavender
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Sign Up: Email Input
-                    OutlinedTextField(
-                        value = emailSignUpInput,
-                        onValueChange = { emailSignUpInput = it },
-                        label = { Text("Email") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = PastelLavender)
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PastelLavender,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = PastelLavender
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
+        // Form Card with Animated Transition
+        AnimatedContent(
+            targetState = isLoginMode,
+            transitionSpec = {
+                if (targetState) {
+                    (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> width } + fadeOut()
                     )
                 } else {
-                    // Login: Email or Username Input
+                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> -width } + fadeOut()
+                    )
+                }.using(SizeTransform(clip = false))
+            },
+            label = "auth_screen_transition",
+            modifier = Modifier.fillMaxWidth()
+        ) { activeLoginMode ->
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = if (activeLoginMode) "Masuk ke Akunmu 👋" else "Daftar Akun Baru 🌟",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (!errorMessage.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = PastelRose.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, PastelRose)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PastelRose,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    if (!activeLoginMode) {
+                        // Sign Up: Username Input
+                        OutlinedTextField(
+                            value = usernameInput,
+                            onValueChange = { usernameInput = it },
+                            label = { Text("Username") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = PastelLavender)
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PastelLavender,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = PastelLavender
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Sign Up: Email Input
+                        OutlinedTextField(
+                            value = emailSignUpInput,
+                            onValueChange = { emailSignUpInput = it },
+                            label = { Text("Email") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Email, contentDescription = null, tint = PastelLavender)
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PastelLavender,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = PastelLavender
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        // Login: Email or Username Input
+                        OutlinedTextField(
+                            value = emailOrUsernameInput,
+                            onValueChange = { emailOrUsernameInput = it },
+                            label = { Text("Email / Username") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = PastelLavender)
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PastelLavender,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = PastelLavender
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    // Password Input
                     OutlinedTextField(
-                        value = emailOrUsernameInput,
-                        onValueChange = { emailOrUsernameInput = it },
-                        label = { Text("Email / Username") },
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        label = { Text("Kata Sandi") },
                         leadingIcon = {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = PastelLavender)
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = PastelLavender)
                         },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = "Toggle Password",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PastelLavender,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
@@ -265,70 +316,41 @@ fun AuthScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
-                }
 
-                // Password Input
-                OutlinedTextField(
-                    value = passwordInput,
-                    onValueChange = { passwordInput = it },
-                    label = { Text("Kata Sandi") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = PastelLavender)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = "Toggle Password",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Submit Button
+                    Button(
+                        onClick = {
+                            if (activeLoginMode) {
+                                onLogin(emailOrUsernameInput, passwordInput)
+                            } else {
+                                onSignUp(usernameInput, emailSignUpInput, passwordInput)
+                            }
+                        },
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PastelLavender,
+                            contentColor = Color(0xFF261833)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = Color(0xFF261833),
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                text = if (activeLoginMode) "Masuk Sekarang" else "Daftar Akun Baru",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
                             )
                         }
-                    },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PastelLavender,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedLabelColor = PastelLavender
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Submit Button
-                Button(
-                    onClick = {
-                        if (isLoginMode) {
-                            onLogin(emailOrUsernameInput, passwordInput)
-                        } else {
-                            onSignUp(usernameInput, emailSignUpInput, passwordInput)
-                        }
-                    },
-                    enabled = !isLoading,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PastelLavender,
-                        contentColor = Color(0xFF261833)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = Color(0xFF261833),
-                            strokeWidth = 2.5.dp
-                        )
-                    } else {
-                        Text(
-                            text = if (isLoginMode) "Masuk Sekarang" else "Daftar Akun Baru",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
                     }
                 }
             }
