@@ -1,8 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/app_custom_icon"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Bold Cat Ear Left -->
+    <path
+        android:pathData="M38,44 L28,24 C28,24 40,28 48,34 Z"
+        android:fillColor="#E1C3FC"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+
+    <!-- Inner Ear Left -->
+    <path
+        android:pathData="M36,40 L31,28 L42,34 Z"
+        android:fillColor="#FFB7B2"/>
+
+    <!-- Bold Cat Ear Right -->
+    <path
+        android:pathData="M70,44 L80,24 C80,24 68,28 60,34 Z"
+        android:fillColor="#E1C3FC"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+
+    <!-- Inner Ear Right -->
+    <path
+        android:pathData="M72,40 L77,28 L66,34 Z"
+        android:fillColor="#FFB7B2"/>
+
+    <!-- Main Cat Head Contour (Bold Outline) -->
+    <path
+        android:pathData="M32,46 C32,36 76,36 76,46 C82,54 82,68 74,76 C64,84 44,84 34,76 C26,68 26,54 32,46 Z"
+        android:fillColor="#2A1B3A"
+        android:strokeColor="#E1C3FC"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+
+    <!-- Cheeks (Pastel Blush) -->
+    <path
+        android:pathData="M36,63 C36,61 40,61 40,63 C40,65 36,65 36,63 Z"
+        android:fillColor="#FFC6FF"/>
+    <path
+        android:pathData="M68,63 C68,61 72,61 72,63 C72,65 68,65 68,63 Z"
+        android:fillColor="#FFC6FF"/>
+
+    <!-- Eyes (Happy Closed Arcs) -->
+    <path
+        android:pathData="M40,54 C43,50 47,50 50,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"/>
+    <path
+        android:pathData="M58,54 C61,50 65,50 68,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"/>
+
+    <!-- Cute Nose and Mouth -->
+    <path
+        android:pathData="M52,60 C50,63 48,62 46,60 M52,60 C54,63 56,62 58,60"
+        android:strokeColor="#FFC6FF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"/>
+
+    <!-- Whiskers Left -->
+    <path
+        android:pathData="M18,54 L28,56 M16,61 L27,61 M19,68 L29,65"
+        android:strokeColor="#E1C3FC"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"/>
+
+    <!-- Whiskers Right -->
+    <path
+        android:pathData="M90,54 L80,56 M92,61 L81,61 M89,68 L79,65"
+        android:strokeColor="#E1C3FC"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"/>
+
+    <!-- Cute Sparkle Star top right -->
+    <path
+        android:pathData="M84,32 L86,36 L90,38 L86,40 L84,44 L82,40 L78,38 L82,36 Z"
+        android:fillColor="#FFC6FF"/>
+
+</vector>

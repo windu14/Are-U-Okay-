@@ -9,14 +9,17 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -96,51 +99,91 @@ fun SongCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Rank badge if present (Netflix Style Big Top Number)
+                    // Rank badge & Album Artwork if rankIndex present (Netflix Style Big Top Number with Overlap)
                     if (rankIndex != null) {
                         Box(
-                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .padding(start = 2.dp, end = 8.dp)
+                                .width(76.dp)
+                                .height(56.dp)
                         ) {
+                            // Netflix-Style Giant Rank Number
                             Text(
                                 text = "$rankIndex",
-                                fontSize = 44.sp,
+                                fontSize = 60.sp,
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = (-2).sp,
-                                lineHeight = 44.sp,
+                                letterSpacing = (-3).sp,
+                                lineHeight = 60.sp,
                                 color = when (rankIndex) {
                                     1 -> PastelRose
                                     2 -> PastelLavender
                                     else -> PastelMint
-                                }
-                            )
-                        }
-                    }
-
-                    // Album Artwork
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        if (!artworkUrl.isNull_or_blank()) {
-                            AsyncImage(
-                                model = artworkUrl,
-                                contentDescription = trackName,
-                                modifier = Modifier.size(52.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = PastelLavender,
+                                },
                                 modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .size(24.dp)
+                                    .align(Alignment.CenterStart)
+                                    .offset(x = 0.dp, y = (-2).dp)
                             )
+
+                            // Album Artwork overlapping the giant number on the right
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .align(Alignment.CenterEnd)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(
+                                        1.5.dp,
+                                        when (rankIndex) {
+                                            1 -> PastelRose.copy(alpha = 0.8f)
+                                            2 -> PastelLavender.copy(alpha = 0.8f)
+                                            else -> PastelMint.copy(alpha = 0.8f)
+                                        },
+                                        RoundedCornerShape(12.dp)
+                                    )
+                            ) {
+                                if (!artworkUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = artworkUrl,
+                                        contentDescription = trackName,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = PastelLavender,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Regular Artwork Box without rank number
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            if (!artworkUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = artworkUrl,
+                                    contentDescription = trackName,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = null,
+                                    tint = PastelLavender,
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(24.dp)
+                                )
+                            }
                         }
                     }
 
