@@ -47,9 +47,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -101,23 +103,32 @@ fun SongCard(
                 ) {
                     // Rank badge & Album Artwork if rankIndex present (Netflix Style Big Top Number with Overlap)
                     if (rankIndex != null) {
+                        val strokeColor = when (rankIndex) {
+                            1 -> PastelRose
+                            2 -> PastelLavender
+                            else -> PastelMint
+                        }
+                        val density = LocalDensity.current
+
                         Box(
                             modifier = Modifier
                                 .width(76.dp)
                                 .height(56.dp)
                         ) {
-                            // Netflix-Style Giant Rank Number
+                            // Netflix-Style Giant Hollow Outline Rank Number
                             Text(
                                 text = "$rankIndex",
-                                fontSize = 60.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-3).sp,
-                                lineHeight = 60.sp,
-                                color = when (rankIndex) {
-                                    1 -> PastelRose
-                                    2 -> PastelLavender
-                                    else -> PastelMint
-                                },
+                                style = TextStyle(
+                                    fontSize = 62.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = (-3).sp,
+                                    lineHeight = 62.sp,
+                                    color = strokeColor,
+                                    drawStyle = Stroke(
+                                        width = with(density) { 3.5.dp.toPx() },
+                                        join = StrokeJoin.Round
+                                    )
+                                ),
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                                     .offset(x = 0.dp, y = (-2).dp)

@@ -72,59 +72,31 @@ fun TentangScreen(
             .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 100.dp)
     ) {
-        // App Hero Banner
-        Box(
+        // App Header Logo & Version (Clean)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF2B213A),
-                            Color(0xFF1B1728)
-                        )
-                    )
-                )
-                .padding(24.dp)
+                .padding(vertical = 12.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_banner),
-                    contentDescription = "Logo Banner",
-                    modifier = Modifier
-                        .size(110.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Fit
-                )
+            Image(
+                painter = painterResource(id = R.drawable.logo_banner),
+                contentDescription = "Logo Banner",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Fit
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "are you okay?",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = PastelLavender,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Text(
-                    text = "A Safe Space for Gen Z & Teens • Versi ${com.example.BuildConfig.VERSION_NAME}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = PastelRose,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Didesain khusus untuk menangkap dinamika perasaan remaja & Gen Z: bahagia asmara, sedih patah hati, keraguan jati diri, hingga tekanan pendidikan.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 22.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
+            Text(
+                text = "Versi ${com.example.BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.titleMedium,
+                color = PastelRose,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
