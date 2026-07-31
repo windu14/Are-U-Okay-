@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -9,6 +8,16 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,34 +36,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -70,21 +71,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.data.remote.DrivePhoto
 import com.example.data.repository.GoogleDriveRepository
 import com.example.ui.theme.PastelLavender
-import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
 import com.example.ui.theme.PlayfairBoldFamily
 import kotlinx.coroutines.Dispatchers
@@ -94,26 +99,280 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.sin
+
+/**
+ * Material 3 Expressive Circular Wavy Progress Indicator.
+ * EXCLUSIVELY used during uploading photos to Google Drive.
+ */
+@Composable
+fun CircularWavyProgressIndicator(
+    modifier: Modifier = Modifier,
+    color: Color = PastelLavender,
+    trackColor: Color = color.copy(alpha = 0.2f),
+    strokeWidth: Dp = 4.dp,
+    amplitude: Dp = 3.dp,
+    wavelengths: Int = 10,
+    size: Dp = 48.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "wavy_progress")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+    val waveOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "waveOffset"
+    )
+
+    Canvas(modifier = modifier.size(size)) {
+        val strokePx = strokeWidth.toPx()
+        val amplitudePx = amplitude.toPx()
+        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+        val baseRadius = (minOf(this.size.width, this.size.height) - strokePx - amplitudePx * 2) / 2f
+
+        if (baseRadius <= 0) return@Canvas
+
+        // 1. Draw track
+        val trackPath = Path()
+        val numPointsTrack = 100
+        for (i in 0..numPointsTrack) {
+            val angle = (i.toFloat() / numPointsTrack) * 2 * Math.PI
+            val wave = sin(angle * wavelengths + waveOffset.toDouble()) * amplitudePx
+            val r = baseRadius + wave
+            val x = center.x + (r * cos(angle + Math.toRadians(rotation.toDouble()))).toFloat()
+            val y = center.y + (r * sin(angle + Math.toRadians(rotation.toDouble()))).toFloat()
+            if (i == 0) trackPath.moveTo(x, y) else trackPath.lineTo(x, y)
+        }
+        drawPath(
+            path = trackPath,
+            color = trackColor,
+            style = Stroke(width = strokePx, cap = StrokeCap.Round)
+        )
+
+        // 2. Draw active arc segment (approx 270 deg)
+        val activePath = Path()
+        val numPointsActive = 75
+        val arcRad = 1.5 * Math.PI
+        val startRad = Math.toRadians(rotation.toDouble())
+        for (i in 0..numPointsActive) {
+            val fraction = i.toFloat() / numPointsActive
+            val angle = fraction * arcRad
+            val wave = sin(angle * wavelengths + waveOffset.toDouble()) * amplitudePx
+            val r = baseRadius + wave
+            val x = center.x + (r * cos(angle + startRad)).toFloat()
+            val y = center.y + (r * sin(angle + startRad)).toFloat()
+            if (i == 0) activePath.moveTo(x, y) else activePath.lineTo(x, y)
+        }
+        drawPath(
+            path = activePath,
+            color = color,
+            style = Stroke(width = strokePx, cap = StrokeCap.Round)
+        )
+    }
+}
+
+/**
+ * Custom Skeleton Loading Layout used when initially opening/fetching FotoScreen.
+ * Replaces the Wavy Progress Indicator with an elegant custom pulsing grid.
+ */
+@Composable
+fun CustomFotoSkeletonLoading(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "skeleton_pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha_pulse"
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Top Custom Loading Status Bar
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = PastelLavender.copy(alpha = alpha),
+                modifier = Modifier.size(10.dp)
+            ) {}
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Memuat galeri foto Google Drive...",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Skeleton Grid 2 Columns x 3 Rows
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = false
+        ) {
+            items(6) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
+                        // Skeleton Image Box
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .background(MaterialTheme.colorScheme.outline.copy(alpha = alpha * 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.PhotoLibrary,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha * 0.5f),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
+                        // Skeleton Text Placeholders
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(12.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = alpha * 0.25f))
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.45f)
+                                    .height(10.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha * 0.2f))
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Custom soft pulse loader used inside individual card image placeholders.
+ */
+@Composable
+fun CustomCardImageLoader(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "card_loader")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "card_alpha"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(PastelLavender.copy(alpha = alpha)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Default.PhotoLibrary,
+            contentDescription = null,
+            tint = PastelLavender.copy(alpha = alpha + 0.3f),
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+/**
+ * Custom loader used inside full-screen image viewer preview dialog.
+ */
+@Composable
+fun CustomFullViewerImageLoader(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "viewer_loader")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "viewer_alpha"
+    )
+
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = PastelLavender.copy(alpha = alpha * 0.25f),
+            modifier = Modifier.size(64.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.PhotoLibrary,
+                    contentDescription = null,
+                    tint = PastelLavender.copy(alpha = alpha),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = "Memuat foto...",
+            color = Color.White.copy(alpha = 0.8f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FotoScreen(
+    currentUsername: String = "Remaja Ceria",
     onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val prefs = remember { context.getSharedPreferences("gdrive_prefs", Context.MODE_PRIVATE) }
     val driveRepo = remember { GoogleDriveRepository() }
-
-    val defaultUrl = "https://script.google.com/macros/s/AKfycbzbn8KpFcTRHMuh3Q-gA5QPEPekyQ-G3BBCMUraH5Fz-8ozKpn2qrmOkdkFlUc1WZRcZA/exec"
-    var webAppUrl by remember {
-        val saved = prefs.getString("webapp_url", "")
-        mutableStateOf(if (saved.isNullOrBlank()) defaultUrl else saved)
-    }
-    var inputUrl by remember { mutableStateOf(webAppUrl) }
-    var showSetupDialog by remember { mutableStateOf(false) }
-    var showInstructionsDialog by remember { mutableStateOf(false) }
+    val webAppUrl = GoogleDriveRepository.DEFAULT_WEB_APP_URL
 
     var photos by remember { mutableStateOf<List<DrivePhoto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -130,16 +389,12 @@ fun FotoScreen(
                 photos = list
             }.onFailure { err ->
                 errorMessage = err.localizedMessage ?: "Gagal memuat foto dari Google Drive"
-                // Fallback to sample photos if network error
-                if (photos.isEmpty()) {
-                    photos = driveRepo.defaultSamplePhotos
-                }
             }
             isLoading = false
         }
     }
 
-    LaunchedEffect(webAppUrl) {
+    LaunchedEffect(Unit) {
         loadPhotos()
     }
 
@@ -148,15 +403,10 @@ fun FotoScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            if (webAppUrl.isBlank()) {
-                Toast.makeText(context, "Atur URL Google Apps Script Web App terlebih dahulu!", Toast.LENGTH_LONG).show()
-                showSetupDialog = true
-                return@rememberLauncherForActivityResult
-            }
-
             coroutineScope.launch {
                 isUploading = true
                 try {
+                    val safeUsername = currentUsername.ifBlank { "User" }
                     val (filename, mimeType, base64) = withContext(Dispatchers.IO) {
                         val inputStream = context.contentResolver.openInputStream(uri)
                         val originalBitmap = BitmapFactory.decodeStream(inputStream)
@@ -166,7 +416,7 @@ fun FotoScreen(
                             throw Exception("Gagal membaca file gambar")
                         }
 
-                        // Scale down bitmap for fast upload
+                        // Compress and scale down bitmap for fast upload
                         val maxDim = 1280
                         val width = originalBitmap.width
                         val height = originalBitmap.height
@@ -183,11 +433,18 @@ fun FotoScreen(
                         scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
                         val bytes = baos.toByteArray()
                         val b64Str = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                        val fname = "curhat_${System.currentTimeMillis()}.jpg"
+                        val cleanUploader = safeUsername.replace(" ", "_")
+                        val fname = "curhat_${cleanUploader}_${System.currentTimeMillis()}.jpg"
                         Triple(fname, "image/jpeg", b64Str)
                     }
 
-                    val result = driveRepo.uploadPhotoToGDrive(webAppUrl, filename, mimeType, base64)
+                    val result = driveRepo.uploadPhotoToGDrive(
+                        webAppUrl = webAppUrl,
+                        filename = filename,
+                        mimeType = mimeType,
+                        base64Data = base64,
+                        uploader = safeUsername
+                    )
                     result.onSuccess { uploadedPhoto ->
                         Toast.makeText(context, "✨ Foto berhasil di-upload ke GDrive!", Toast.LENGTH_SHORT).show()
                         photos = listOf(uploadedPhoto) + photos
@@ -209,31 +466,38 @@ fun FotoScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
                             Text(
-                                text = "Galeri Foto GDrive 📸",
+                                text = "Galeri Foto GDrive",
                                 fontFamily = PlayfairBoldFamily,
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = PastelRose.copy(alpha = 0.3f)
+                                shape = RoundedCornerShape(6.dp),
+                                color = PastelRose.copy(alpha = 0.25f)
                             ) {
                                 Text(
                                     text = "Eksperimental",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PastelRose,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
                             }
                         }
                         Text(
-                            text = if (webAppUrl.isNotBlank()) "Terhubung ke Google Drive Folder Admin" else "Sampel Foto (Klik ⚙️ untuk set Apps Script URL)",
+                            text = "Tersimpan di Google Drive Cloud Admin",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 },
@@ -246,10 +510,11 @@ fun FotoScreen(
                 },
                 actions = {
                     IconButton(onClick = { loadPhotos() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = PastelLavender)
-                    }
-                    IconButton(onClick = { showSetupDialog = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Pengaturan Apps Script", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Refresh Galeri",
+                            tint = PastelLavender
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -266,11 +531,11 @@ fun FotoScreen(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Upload Foto")
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Upload Foto", fontWeight = FontWeight.Bold)
+                    Text("Upload Foto", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -280,86 +545,134 @@ fun FotoScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Warning / Setup info banner if WebAppUrl is empty
-                if (webAppUrl.isBlank()) {
-                    Surface(
-                        color = PastelLavender.copy(alpha = 0.15f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.HelpOutline,
-                                contentDescription = null,
-                                tint = PastelLavender,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Google Drive Web App Belum Terhubung",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Menampilkan foto demo. Hubungkan Google Apps Script Web App untuk upload & sinkronisasi otomatis ke GDrive.",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Button(
-                                onClick = { showSetupDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = PastelLavender),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("Atur", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1B28))
-                            }
-                        }
-                    }
+            when {
+                // Initial Loading State: Uses Custom Skeleton Pulse Grid instead of Wavy Progress
+                isLoading && photos.isEmpty() -> {
+                    CustomFotoSkeletonLoading()
                 }
 
-                if (errorMessage != null && photos.isEmpty()) {
+                errorMessage != null && photos.isEmpty() -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Button(onClick = { loadPhotos() }, colors = ButtonDefaults.buttonColors(containerColor = PastelLavender)) {
-                                Text("Coba Lagi")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Default.PhotoLibrary,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = errorMessage ?: "Gagal terhubung ke Google Drive",
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { loadPhotos() },
+                                colors = ButtonDefaults.buttonColors(containerColor = PastelLavender),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = Color(0xFF1E1B28),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Coba Lagi",
+                                    color = Color(0xFF1E1B28),
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
-                } else if (isLoading && photos.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = PastelLavender)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text("⏳ Memuat foto dari Google Drive...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                photos.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = PastelLavender.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(72.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.Default.CloudUpload,
+                                            contentDescription = null,
+                                            tint = PastelLavender,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "Belum Ada Foto di Google Drive",
+                                    fontFamily = PlayfairBoldFamily,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Unggah foto pertama kamu! Semua foto tersimpan otomatis di folder Google Drive.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Button(
+                                    onClick = { photoPickerLauncher.launch("image/*") },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = PastelLavender,
+                                        contentColor = Color(0xFF1E1B28)
+                                    ),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AddPhotoAlternate,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Unggah Foto", fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
-                } else {
+                }
+
+                else -> {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(photos, key = { it.id }) { photo ->
@@ -372,8 +685,12 @@ fun FotoScreen(
                 }
             }
 
-            // Upload Overlay Loader
-            if (isUploading) {
+            // Material 3 Expressive Wavy Progress Indicator is strictly reserved for Uploading Overlay
+            AnimatedVisibility(
+                visible = isUploading,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.75f),
                     modifier = Modifier.fillMaxSize()
@@ -381,15 +698,19 @@ fun FotoScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(24.dp),
                             modifier = Modifier.padding(32.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp),
+                                modifier = Modifier.padding(28.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                CircularProgressIndicator(color = PastelLavender)
-                                Spacer(modifier = Modifier.height(16.dp))
+                                CircularWavyProgressIndicator(
+                                    color = PastelLavender,
+                                    size = 56.dp,
+                                    strokeWidth = 4.dp
+                                )
+                                Spacer(modifier = Modifier.height(18.dp))
                                 Text(
                                     text = "Meng-upload foto ke GDrive...",
                                     fontWeight = FontWeight.Bold,
@@ -420,40 +741,70 @@ fun FotoScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.92f))
+                    .background(Color.Black.copy(alpha = 0.94f))
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(photo.url)
                         .crossfade(true)
                         .build(),
-                    contentDescription = photo.name,
+                    contentDescription = "Foto oleh ${photo.uploader}",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    loading = {
+                        CustomFullViewerImageLoader()
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ImageNotSupported,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
                 )
 
-                // Top Close Bar
+                // Top Close Bar (Clean User Account & Date Time metadata without raw filename)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            text = photo.name,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        val dateStr = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(photo.createdTime))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = PastelLavender,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Oleh: ${photo.uploader}",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm", Locale.getDefault()).format(Date(photo.createdTime))
                         Text(
                             text = dateStr,
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 12.sp
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     IconButton(
                         onClick = { selectedPhotoForViewer = null },
@@ -466,176 +817,6 @@ fun FotoScreen(
                 }
             }
         }
-    }
-
-    // Setup Dialog (Enter Google Apps Script Web App URL)
-    if (showSetupDialog) {
-        AlertDialog(
-            onDismissRequest = { showSetupDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = null, tint = PastelLavender)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Pengaturan GDrive Web App", fontFamily = PlayfairBoldFamily, fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Masukkan URL Web App Google Apps Script yang sudah kamu deploy dari akun Google-mu:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    OutlinedTextField(
-                        value = inputUrl,
-                        onValueChange = { inputUrl = it },
-                        placeholder = { Text("https://script.google.com/macros/s/AKfycbx.../exec", fontSize = 11.sp) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PastelLavender),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Button(
-                        onClick = { showInstructionsDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PastelLavender.copy(alpha = 0.2f),
-                            contentColor = PastelLavender
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("📄 Panduan & Code Script Google Apps Script", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        webAppUrl = inputUrl.trim()
-                        prefs.edit().putString("webapp_url", webAppUrl).apply()
-                        showSetupDialog = false
-                        Toast.makeText(context, "URL Apps Script berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelLavender, contentColor = Color(0xFF1E1B28)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Simpan URL", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { showSetupDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Tutup")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp)
-        )
-    }
-
-    // Comprehensive Manual Instructions Dialog
-    if (showInstructionsDialog) {
-        val scriptCode = """
-const FOLDER_ID = "1Xhbe21cVwtUBSqNrm_LTfJHzPjvT7Zx7";
-
-function doGet(e) {
-  try {
-    const folder = DriveApp.getFolderById(FOLDER_ID);
-    const files = folder.getFiles();
-    const result = [];
-    
-    while (files.hasNext()) {
-      const file = files.next();
-      const mime = file.getMimeType();
-      if (mime.indexOf("image/") === 0 || mime === "application/octet-stream") {
-        const fileId = file.getId();
-        result.push({
-          id: fileId,
-          name: file.getName(),
-          mimeType: mime,
-          url: "https://lh3.googleusercontent.com/d/" + fileId,
-          downloadUrl: "https://drive.google.com/uc?export=view&id=" + fileId,
-          createdTime: file.getDateCreated().getTime()
-        });
-      }
-    }
-    result.sort((a, b) => b.createdTime - a.createdTime);
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: result })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  try {
-    const contents = JSON.parse(e.postData.contents);
-    const filename = contents.filename || ("curhat_" + Date.now() + ".jpg");
-    const mimeType = contents.mimeType || "image/jpeg";
-    const bytes = Utilities.base64Decode(contents.base64Data);
-    const blob = Utilities.newBlob(bytes, mimeType, filename);
-    const folder = DriveApp.getFolderById(FOLDER_ID);
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const fileId = file.getId();
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", fileId: fileId, url: "https://lh3.googleusercontent.com/d/" + fileId, name: filename })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-        """.trimIndent()
-
-        AlertDialog(
-            onDismissRequest = { showInstructionsDialog = false },
-            title = {
-                Text("Langkah-Langkah Setup Google Apps Script", fontFamily = PlayfairBoldFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            },
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text("1. Buka script.google.com & buat 'New Project'", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("2. Hapus isi Code.gs, lalu paste kode JavaScript berikut:", fontSize = 12.sp)
-                    
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = scriptCode,
-                            fontSize = 10.sp,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-
-                    Text("3. Klik 'Deploy' -> 'New Deployment'", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("4. Pilih jenis 'Web App':", fontSize = 12.sp)
-                    Text("   • Execute as: Me (akun Google Anda)", fontSize = 11.sp, color = PastelLavender)
-                    Text("   • Who has access: Anyone (Siapa Saja)", fontSize = 11.sp, color = PastelRose)
-                    Text("5. Klik Deploy, berikan izin (Authorize Access).", fontSize = 12.sp)
-                    Text("6. Copy Web App URL (berakhiran /exec) & paste di aplikasi!", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = PastelMint)
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showInstructionsDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelLavender, contentColor = Color(0xFF1E1B28)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Saya Mengerti", fontWeight = FontWeight.Bold)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp)
-        )
     }
 }
 
@@ -658,32 +839,68 @@ fun PhotoCardItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(photo.url)
                         .crossfade(true)
                         .build(),
-                    contentDescription = photo.name,
+                    contentDescription = "Foto oleh ${photo.uploader}",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        CustomCardImageLoader()
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ImageNotSupported,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                 )
             }
 
+            // Clean Card Metadata (User Account + Date Time, NO raw filename)
             Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = photo.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        tint = PastelLavender,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Oleh: ${photo.uploader}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
                 val dateStr = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(photo.createdTime))
                 Text(
                     text = dateStr,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                 )
             }
         }

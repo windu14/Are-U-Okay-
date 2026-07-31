@@ -399,9 +399,14 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
                 }
 
-                6 -> FotoScreen(
-                    onBackClick = { onSelectTab(0) }
-                )
+                6 -> {
+                    val uname = userProfile?.username ?: currentUser?.displayName ?: "Remaja Ceria"
+                    FotoScreen(
+                        currentUsername = uname,
+                        onBackClick = { onSelectTab(0) }
+                    )
+                }
+
             }
 
             // Screen Transition Loading Overlay (1.5 Seconds)

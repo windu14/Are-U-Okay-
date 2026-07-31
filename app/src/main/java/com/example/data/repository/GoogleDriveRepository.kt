@@ -20,34 +20,6 @@ class GoogleDriveRepository {
         .followSslRedirects(true)
         .build()
 
-    // Default sample photos shown when GDrive Web App URL is not set yet
-    val defaultSamplePhotos = listOf(
-        DrivePhoto(
-            id = "sample_1",
-            name = "Refleksi Alam & Senja",
-            url = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
-            createdTime = System.currentTimeMillis() - 100000
-        ),
-        DrivePhoto(
-            id = "sample_2",
-            name = "Suasana Kopi & Curhat",
-            url = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&auto=format&fit=crop&q=80",
-            createdTime = System.currentTimeMillis() - 200000
-        ),
-        DrivePhoto(
-            id = "sample_3",
-            name = "Hujan & Kedamaian",
-            url = "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=800&auto=format&fit=crop&q=80",
-            createdTime = System.currentTimeMillis() - 300000
-        ),
-        DrivePhoto(
-            id = "sample_4",
-            name = "Langit Malam Bintang",
-            url = "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80",
-            createdTime = System.currentTimeMillis() - 400000
-        )
-    )
-
     companion object {
         const val DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzbn8KpFcTRHMuh3Q-gA5QPEPekyQ-G3BBCMUraH5Fz-8ozKpn2qrmOkdkFlUc1WZRcZA/exec"
     }
@@ -85,10 +57,12 @@ class GoogleDriveRepository {
                             val createdTime = obj.optLong("createdTime", System.currentTimeMillis())
 
                             if (url.isNotBlank() || id.isNotBlank()) {
+                                val uploaderName = parseUploader(name, obj.optString("uploader", ""))
                                 list.add(
                                     DrivePhoto(
                                         id = id,
                                         name = name,
+                                        uploader = uploaderName,
                                         mimeType = mimeType,
                                         url = if (url.isNotBlank()) url else "https://lh3.googleusercontent.com/d/$id",
                                         downloadUrl = downloadUrl,
@@ -111,11 +85,26 @@ class GoogleDriveRepository {
         }
     }
 
+    private fun parseUploader(name: String, jsonUploader: String): String {
+        if (jsonUploader.isNotBlank()) return jsonUploader
+        if (name.startsWith("curhat_")) {
+            val parts = name.removePrefix("curhat_").split("_")
+            if (parts.size >= 2) {
+                val candidate = parts.dropLast(1).joinToString(" ").replace(".jpg", "", true).replace(".png", "", true)
+                if (candidate.isNotBlank() && !candidate.all { it.isDigit() }) {
+                    return candidate
+                }
+            }
+        }
+        return "Anggota Komunitas"
+    }
+
     suspend fun uploadPhotoToGDrive(
         webAppUrl: String,
         filename: String,
         mimeType: String,
-        base64Data: String
+        base64Data: String,
+        uploader: String = "Pengguna Are You Okay"
     ): Result<DrivePhoto> = withContext(Dispatchers.IO) {
         val targetUrl = if (webAppUrl.isNotBlank()) webAppUrl else DEFAULT_WEB_APP_URL
 
@@ -124,6 +113,7 @@ class GoogleDriveRepository {
                 put("filename", filename)
                 put("mimeType", mimeType)
                 put("base64Data", base64Data)
+                put("uploader", uploader)
             }
 
             val requestBody = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -149,11 +139,13 @@ class GoogleDriveRepository {
                     val photo = DrivePhoto(
                         id = fileId,
                         name = name,
+                        uploader = uploader,
                         mimeType = mimeType,
                         url = url,
                         createdTime = System.currentTimeMillis()
                     )
                     Result.success(photo)
+
                 } else {
                     val msg = rootJson.optString("message", "Gagal upload gambar ke Google Drive")
                     Result.failure(Exception(msg))
