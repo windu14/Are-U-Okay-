@@ -72,6 +72,7 @@ import com.example.data.remote.UserProfile
 import com.example.ui.components.PlayingAudioWaveAnimation
 import com.example.ui.screens.AiChatScreen
 import com.example.ui.screens.AuthScreen
+import com.example.ui.screens.FotoScreen
 import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProfileScreen
@@ -259,52 +260,54 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
                 }
 
-                // Bottom Navigation Bar
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { onSelectTab(0) },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Home", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF261833),
-                            selectedTextColor = PastelLavender,
-                            indicatorColor = PastelLavender,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                // Bottom Navigation Bar (only shown on primary tabs)
+                if (selectedTab in listOf(0, 1, 2, 5)) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 8.dp
+                    ) {
+                        NavigationBarItem(
+                            selected = selectedTab == 0,
+                            onClick = { onSelectTab(0) },
+                            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                            label = { Text("Home", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF261833),
+                                selectedTextColor = PastelLavender,
+                                indicatorColor = PastelLavender,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
 
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { onSelectTab(1) },
-                        icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
-                        label = { Text("Global Curhat", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF261833),
-                            selectedTextColor = PastelLavender,
-                            indicatorColor = PastelLavender,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        NavigationBarItem(
+                            selected = selectedTab == 1,
+                            onClick = { onSelectTab(1) },
+                            icon = { Icon(Icons.Default.Forum, contentDescription = "Global Curhat") },
+                            label = { Text("Global Curhat", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF261833),
+                                selectedTextColor = PastelLavender,
+                                indicatorColor = PastelLavender,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
 
-                    NavigationBarItem(
-                        selected = selectedTab == 2 || selectedTab == 5,
-                        onClick = { onSelectTab(2) },
-                        icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
-                        label = { Text("Tentang", fontWeight = if (selectedTab == 2 || selectedTab == 5) FontWeight.Bold else FontWeight.Normal) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF261833),
-                            selectedTextColor = PastelLavender,
-                            indicatorColor = PastelLavender,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        NavigationBarItem(
+                            selected = selectedTab == 2 || selectedTab == 5,
+                            onClick = { onSelectTab(2) },
+                            icon = { Icon(Icons.Default.Info, contentDescription = "Tentang") },
+                            label = { Text("Tentang", fontWeight = if (selectedTab == 2 || selectedTab == 5) FontWeight.Bold else FontWeight.Normal) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF261833),
+                                selectedTextColor = PastelLavender,
+                                indicatorColor = PastelLavender,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -396,12 +399,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     )
                 }
 
-                6 -> VideoScreen(
-                    videos = youtubeVideos,
-                    onBackClick = { onSelectTab(0) },
-                    onAddVideo = { url, title, desc, cat ->
-                        viewModel.addYouTubeVideo(url, title, desc, cat)
-                    }
+                6 -> FotoScreen(
+                    onBackClick = { onSelectTab(0) }
                 )
             }
 

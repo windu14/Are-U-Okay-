@@ -398,7 +398,6 @@ class FirebaseRepository {
                 }
 
                 if (snapshot.isEmpty) {
-                    // Seed initial YouTube videos as requested if collection is empty
                     seedDefaultYouTubeVideosIfEmpty()
                 }
 
@@ -410,34 +409,14 @@ class FirebaseRepository {
                             is String -> rawAddedAt.toLongOrNull() ?: System.currentTimeMillis()
                             else -> System.currentTimeMillis()
                         }
-                        var url = doc.getString("youtubeUrl") ?: ""
-                        var title = doc.getString("title") ?: "Video Refleksi"
-                        var description = doc.getString("description") ?: ""
-                        var category = doc.getString("category") ?: "Refleksi & Curhat"
+                        val url = doc.getString("youtubeUrl") ?: ""
+                        val title = doc.getString("title") ?: "Video Refleksi"
+                        val description = doc.getString("description") ?: ""
+                        val category = doc.getString("category") ?: "Self Reflection"
 
-                        // Migrate old restricted video IDs if present in Firestore
-                        val oldVid = YouTubeVideo.extractYouTubeVideoId(url)
-                        if (oldVid == "Zhcy2NNQ4m0" || oldVid == "ZQWb5kEVfLU" || oldVid == "T7JGzJuoPAM" || oldVid == "0hFdxi5MY4c") {
-                            val newUrl = when (oldVid) {
-                                "Zhcy2NNQ4m0" -> "https://www.youtube.com/watch?v=jfKfPfyJRdk"
-                                "ZQWb5kEVfLU" -> "https://www.youtube.com/watch?v=inpok4MKVLM"
-                                "T7JGzJuoPAM" -> "https://www.youtube.com/watch?v=2OEL4P1Rz04"
-                                else -> "https://www.youtube.com/watch?v=DWcJFNfaw9c"
-                            }
-                            val newTitle = when (oldVid) {
-                                "Zhcy2NNQ4m0" -> "Musik Lofi & Relaksasi Pikiran 24/7"
-                                "ZQWb5kEVfLU" -> "Meditasi 5 Menit Melepas Penat & Stres"
-                                "T7JGzJuoPAM" -> "Suara Hujan & Ketenangan Batin"
-                                else -> "Panduan Mindfulness & Mencintai Diri"
-                            }
-                            url = newUrl
-                            title = newTitle
-
-                            // Update document in Firestore
-                            doc.reference.update(mapOf("youtubeUrl" to newUrl, "title" to newTitle))
-                        }
-
-                        YouTubeVideo(
+                        val vidId = YouTubeVideo.extractYouTubeVideoId(url)
+                        // Filter out known embed-restricted video IDs
+                        if (url.isBlank() || vidId == "fo-hwoUzP_o") null else YouTubeVideo(
                             id = doc.id,
                             title = title,
                             youtubeUrl = url,
@@ -450,7 +429,26 @@ class FirebaseRepository {
                     }
                 }.sortedByDescending { it.addedAt }
 
-                trySend(videos)
+                trySend(if (videos.isEmpty()) {
+                    listOf(
+                        YouTubeVideo(
+                            id = "default_lofi_video",
+                            title = "Lofi Hip Hop Radio - Beats to Relax/Study to",
+                            youtubeUrl = "https://www.youtube.com/watch?v=5qap5aO4i9A",
+                            description = "Musik lofi lembut & tenang 24/7 untuk relaksasi pikiran.",
+                            category = "Healing Vibes",
+                            addedAt = System.currentTimeMillis()
+                        ),
+                        YouTubeVideo(
+                            id = "default_meditation_video",
+                            title = "5-Minute Meditation for Anxiety & Peace of Mind",
+                            youtubeUrl = "https://www.youtube.com/watch?v=inpok4MKVLM",
+                            description = "Panduan meditasi pernapasan singkat untuk menenangkan kecemasan.",
+                            category = "Self Reflection",
+                            addedAt = System.currentTimeMillis() - 1000
+                        )
+                    )
+                } else videos)
             }
 
         awaitClose { listenerRegistration.remove() }
@@ -481,38 +479,31 @@ class FirebaseRepository {
     }
 
     private fun seedDefaultYouTubeVideosIfEmpty() {
-        val defaults = listOf(
+        val defaultVideos = listOf(
             YouTubeVideo(
-                title = "Musik Lofi & Relaksasi Pikiran 24/7",
-                youtubeUrl = "https://www.youtube.com/watch?v=jfKfPfyJRdk",
-                description = "Lofi & musik tenang untuk menemani waktu santai, curhat, dan meditasi.",
+                title = "Lofi Hip Hop Radio - Beats to Relax/Study to",
+                youtubeUrl = "https://www.youtube.com/watch?v=5qap5aO4i9A",
+                description = "Musik lofi lembut & tenang 24/7 untuk relaksasi pikiran dan merenung.",
                 category = "Healing Vibes",
-                addedAt = System.currentTimeMillis() - 4000
+                addedAt = System.currentTimeMillis() - 1000
             ),
             YouTubeVideo(
-                title = "Meditasi 5 Menit Melepas Penat & Stres",
+                title = "5-Minute Meditation for Anxiety & Peace of Mind",
                 youtubeUrl = "https://www.youtube.com/watch?v=inpok4MKVLM",
-                description = "Panduan singkat bernapas lega dan menenangkan pikiran lelah.",
+                description = "Panduan meditasi pernapasan singkat untuk menenangkan kecemasan dan stres.",
                 category = "Self Reflection",
-                addedAt = System.currentTimeMillis() - 3000
-            ),
-            YouTubeVideo(
-                title = "Suara Hujan & Ketenangan Batin",
-                youtubeUrl = "https://www.youtube.com/watch?v=2OEL4P1Rz04",
-                description = "Ambience suara hujan alami untuk relaksasi dan kedamaian hati.",
-                category = "Healing Vibes",
                 addedAt = System.currentTimeMillis() - 2000
             ),
             YouTubeVideo(
-                title = "Panduan Mindfulness & Mencintai Diri",
-                youtubeUrl = "https://www.youtube.com/watch?v=DWcJFNfaw9c",
-                description = "Latihan kesadaran penuh untuk menyegarkan hati dan pikiran.",
-                category = "Self Love",
-                addedAt = System.currentTimeMillis() - 1000
+                title = "Stoicism for Inner Peace & Emotional Control",
+                youtubeUrl = "https://www.youtube.com/watch?v=2OEL4P1rub0",
+                description = "Filosofi Stoik untuk menjaga kedamaian batin dan mengelola emosi.",
+                category = "Filosofi Hidup",
+                addedAt = System.currentTimeMillis() - 3000
             )
         )
 
-        defaults.forEach { video ->
+        defaultVideos.forEach { video ->
             val docRef = firestore.collection("youtube_videos").document()
             val map = hashMapOf<String, Any>(
                 "id" to docRef.id,

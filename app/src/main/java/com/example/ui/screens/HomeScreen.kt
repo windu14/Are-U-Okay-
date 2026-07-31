@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.Button
@@ -549,14 +550,14 @@ fun HomeScreen(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.PlayArrow,
+                                            Icons.Default.PhotoLibrary,
                                             contentDescription = null,
                                             tint = Color(0xFF1E1B28),
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            "Video YouTube",
+                                            "Galeri GDrive",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF1E1B28)
@@ -565,14 +566,14 @@ fun HomeScreen(
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    "Video Refleksi & Curhat 🎥",
+                                    "Galeri Foto GDrive 📸",
                                     fontFamily = PlayfairBoldFamily,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                                 Text(
-                                    "Inspirasi & Relaksasi dari YouTube",
+                                    "Simpan & Berbagi Foto via Google Drive",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.White.copy(alpha = 0.85f)
                                 )
