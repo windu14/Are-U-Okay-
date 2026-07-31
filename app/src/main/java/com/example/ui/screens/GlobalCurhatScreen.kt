@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -140,14 +141,18 @@ fun GlobalCurhatScreen(
                             )
                         }
                         Text(
-                            text = "curhatan baru nih hari ini !!! 💬",
+                            text = "curhatan baru nih hari ini !!! 💬   •   curhatan baru nih hari ini !!! 💬   •   curhatan baru nih hari ini !!! 💬",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             modifier = Modifier
                                 .weight(1f)
-                                .basicMarquee(iterations = Int.MAX_VALUE)
+                                .basicMarquee(
+                                    iterations = Int.MAX_VALUE,
+                                    animationMode = MarqueeAnimationMode.Immediately,
+                                    repeatDelayMillis = 0
+                                )
                         )
                     } else {
                         Surface(
@@ -164,14 +169,18 @@ fun GlobalCurhatScreen(
                             )
                         }
                         Text(
-                            text = "belum ada curhatan hari ini...",
+                            text = "belum ada curhatan hari ini...   •   belum ada curhatan hari ini...   •   belum ada curhatan hari ini...",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             modifier = Modifier
                                 .weight(1f)
-                                .basicMarquee(iterations = Int.MAX_VALUE)
+                                .basicMarquee(
+                                    iterations = Int.MAX_VALUE,
+                                    animationMode = MarqueeAnimationMode.Immediately,
+                                    repeatDelayMillis = 0
+                                )
                         )
                     }
                 }

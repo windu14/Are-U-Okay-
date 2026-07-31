@@ -5,9 +5,6 @@
     <attribution
         android:tag="default"
         android:label="@string/app_name" />
-    <attribution
-        android:tag="main"
-        android:label="@string/app_name" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

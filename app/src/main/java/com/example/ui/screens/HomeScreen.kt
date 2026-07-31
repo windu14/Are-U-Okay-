@@ -86,6 +86,7 @@ import java.util.Date
 import java.util.Locale
 import android.net.Uri
 import android.graphics.SurfaceTexture
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.view.Surface
 import android.view.TextureView
@@ -165,6 +166,12 @@ fun BannerVideoPlayer(
                             try {
                                 mediaPlayerRef?.release()
                                 mediaPlayerRef = MediaPlayer().apply {
+                                    setAudioAttributes(
+                                        AudioAttributes.Builder()
+                                            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                                            .build()
+                                    )
                                     setDataSource(ctx, rawUri)
                                     setSurface(Surface(surface))
                                     isLooping = true
