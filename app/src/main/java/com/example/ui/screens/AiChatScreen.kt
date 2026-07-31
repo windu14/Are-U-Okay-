@@ -5,15 +5,20 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -471,148 +476,178 @@ fun ChatBubbleItem(
         sdf.format(Date(message.timestamp))
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+    var isVisible by remember(message.id) { mutableStateOf(false) }
+    LaunchedEffect(message.id) {
+        isVisible = true
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(durationMillis = 300)) +
+                scaleIn(
+                    initialScale = 0.82f,
+                    transformOrigin = TransformOrigin(if (isUser) 1f else 0f, 1f),
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) +
+                slideInVertically(
+                    initialOffsetY = { 35 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
     ) {
-        if (!isUser) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = PastelLavender,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Mochibot",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = PastelLavender
-                )
-            }
-        }
-
-        Card(
-            shape = if (isUser) {
-                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 4.dp)
-            } else {
-                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp)
-            },
-            colors = CardDefaults.cardColors(
-                containerColor = if (isUser) PastelLavender.copy(alpha = 0.25f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier.widthIn(min = 90.dp, max = 290.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = message.text,
-                    fontFamily = if (!isUser) PlayfairRegularFamily else MaterialTheme.typography.bodyMedium.fontFamily,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 15.sp,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                if (message.actionNoteSaved) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = PastelLavender.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = PastelLavender,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (!message.attachedSongName.isNullOrEmpty()) 
-                                    "✨ Otomatis tersimpan ke Catatan Curhat (+ 🎵 ${message.attachedSongName})"
-                                else 
-                                    "✨ Otomatis tersimpan ke Catatan Curhat!",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+            if (!isUser) {
                 Row(
-                    modifier = Modifier.align(if (isUser) Alignment.End else Alignment.Start),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = PastelLavender,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Mochibot",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = PastelLavender
+                    )
+                }
+            }
+
+            Card(
+                shape = if (isUser) {
+                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 4.dp)
+                } else {
+                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp)
+                },
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isUser) PastelLavender.copy(alpha = 0.25f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.widthIn(min = 90.dp, max = 290.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(12.dp)
                 ) {
                     Text(
-                        text = timeFormatted,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontSize = 10.sp
+                        text = message.text,
+                        fontFamily = if (!isUser) PlayfairRegularFamily else MaterialTheme.typography.bodyMedium.fontFamily,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    if (!isUser) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            IconButton(
-                                onClick = { onCopyText(message.text) },
-                                modifier = Modifier.size(24.dp)
+                    if (message.actionNoteSaved) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            shape = CircleShape,
+                            color = PastelLavender.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.6f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Salin",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = PastelLavender,
                                     modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (!message.attachedSongName.isNullOrEmpty()) 
+                                        "✨ Otomatis tersimpan ke Catatan Curhat (+ 🎵 ${message.attachedSongName})"
+                                    else 
+                                        "✨ Otomatis tersimpan ke Catatan Curhat!",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+                    }
 
-                            // Expressive Action: Save response to Journal Notes!
-                            IconButton(
-                                onClick = { onSaveToNote(message.text) },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Create,
-                                    contentDescription = "Simpan ke Catatan",
-                                    tint = PastelRose,
-                                    modifier = Modifier.size(14.dp)
-                                )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.align(if (isUser) Alignment.End else Alignment.Start),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = timeFormatted,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            fontSize = 10.sp
+                        )
+
+                        if (!isUser) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(
+                                    onClick = { onCopyText(message.text) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Salin",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+
+                                // Expressive Action: Save response to Journal Notes!
+                                IconButton(
+                                    onClick = { onSaveToNote(message.text) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Create,
+                                        contentDescription = "Simpan ke Catatan",
+                                        tint = PastelRose,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        if (!isUser && !message.thinkingTimeSec.isNullOrEmpty()) {
-            Text(
-                text = "selesai berpikir dalam ${message.thinkingTimeSec} detik",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                fontSize = 10.sp,
-                modifier = Modifier.padding(top = 4.dp, start = 6.dp)
-            )
+            if (!isUser && !message.thinkingTimeSec.isNullOrEmpty()) {
+                Text(
+                    text = "selesai berpikir dalam ${message.thinkingTimeSec} detik",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 4.dp, start = 6.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun ThinkingIndicatorBubble() {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "ai_thinking_rotation")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -624,35 +659,58 @@ fun ThinkingIndicatorBubble() {
         label = "rotation_angle"
     )
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.Start
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(250)) +
+                scaleIn(
+                    initialScale = 0.85f,
+                    transformOrigin = TransformOrigin(0f, 1f),
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) +
+                slideInVertically(
+                    initialOffsetY = { 25 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
     ) {
-        Card(
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.3f))
             ) {
-                AsyncImage(
-                    model = "file:///android_asset/loading.svg",
-                    contentDescription = "Loading...",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .rotate(angle)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Mochibot lagi dengerin.....",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = "file:///android_asset/loading.svg",
+                        contentDescription = "Mochibot Berpikir...",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(angle)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Mochibot lagi dengerin.....",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

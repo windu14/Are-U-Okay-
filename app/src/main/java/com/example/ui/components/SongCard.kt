@@ -3,9 +3,12 @@ package com.example.ui.components
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -295,7 +298,7 @@ fun SongCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    PlayingAudioWaveAnimation(modifier = Modifier.padding(end = 8.dp))
+                    PlayingAudioWaveAnimation(isPlaying = isPlaying, modifier = Modifier.padding(end = 8.dp))
                     LinearWavyProgressIndicator(
                         progress = { playerState.progress },
                         modifier = Modifier
@@ -384,7 +387,19 @@ fun LinearWavyProgressIndicator(
 }
 
 @Composable
-fun PlayingAudioWaveAnimation(modifier: Modifier = Modifier) {
+fun PlayingAudioWaveAnimation(
+    isPlaying: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val playFactor by animateFloatAsState(
+        targetValue = if (isPlaying) 1f else 0.18f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "playFactor"
+    )
+
     val infiniteTransition = rememberInfiniteTransition(label = "audioWave")
     val scale1 by infiniteTransition.animateFloat(
         initialValue = 0.3f, targetValue = 1f,
@@ -401,29 +416,40 @@ fun PlayingAudioWaveAnimation(modifier: Modifier = Modifier) {
         animationSpec = infiniteRepeatable(tween(350, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "h3"
     )
+    val scale4 by infiniteTransition.animateFloat(
+        initialValue = 0.25f, targetValue = 0.95f,
+        animationSpec = infiniteRepeatable(tween(480, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "h4"
+    )
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .width(3.dp)
-                .height((14 * scale1).dp)
+                .height((14 * (0.25f + (scale1 - 0.25f) * playFactor)).dp)
                 .background(PastelRose, CircleShape)
         )
         Box(
             modifier = Modifier
                 .width(3.dp)
-                .height((18 * scale2).dp)
+                .height((18 * (0.2f + (scale2 - 0.2f) * playFactor)).dp)
                 .background(PastelLavender, CircleShape)
         )
         Box(
             modifier = Modifier
                 .width(3.dp)
-                .height((14 * scale3).dp)
+                .height((14 * (0.25f + (scale3 - 0.25f) * playFactor)).dp)
                 .background(PastelMint, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height((16 * (0.2f + (scale4 - 0.2f) * playFactor)).dp)
+                .background(PastelLavender.copy(alpha = 0.8f), CircleShape)
         )
     }
 }

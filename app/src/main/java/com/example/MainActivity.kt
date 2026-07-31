@@ -69,6 +69,7 @@ import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import com.example.audio.AudioPlayerState
 import com.example.data.remote.UserProfile
+import com.example.ui.components.PlayingAudioWaveAnimation
 import com.example.ui.screens.AiChatScreen
 import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.GlobalCurhatScreen
@@ -236,9 +237,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 // Persistent Player Bar when audio is loaded or playing
                 if (playerState.currentPreviewUrl != null) {
@@ -461,11 +460,11 @@ fun MiniPlayerBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFF2B243B),
-        shadowElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.4f))
+            .padding(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f),
+        shadowElevation = 12.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, PastelLavender.copy(alpha = 0.45f))
     ) {
         Column {
             Row(
@@ -527,6 +526,11 @@ fun MiniPlayerBar(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    PlayingAudioWaveAnimation(
+                        isPlaying = playerState.isPlaying,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+
                     IconButton(
                         onClick = onPlayPauseClick,
                         modifier = Modifier
