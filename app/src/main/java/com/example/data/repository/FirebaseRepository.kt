@@ -4,6 +4,7 @@ import com.example.data.local.CommentItem
 import com.example.data.local.JournalNote
 import com.example.data.remote.ITunesTrack
 import com.example.data.remote.UserProfile
+import com.example.data.remote.YouTubeVideo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
@@ -384,6 +385,144 @@ class FirebaseRepository {
         } catch (e: Exception) {
             android.util.Log.e("FirebaseRepository", "Failed adding comment", e)
             Result.failure(e)
+        }
+    }
+
+    fun getYouTubeVideosFlow(): Flow<List<YouTubeVideo>> = callbackFlow {
+        val listenerRegistration = firestore.collection("youtube_videos")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    android.util.Log.e("FirebaseRepository", "Error reading youtube_videos", error)
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+
+                if (snapshot.isEmpty) {
+                    // Seed initial YouTube videos as requested if collection is empty
+                    seedDefaultYouTubeVideosIfEmpty()
+                }
+
+                val videos = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val rawAddedAt = doc.get("addedAt")
+                        val addedAtLong = when (rawAddedAt) {
+                            is Number -> rawAddedAt.toLong()
+                            is String -> rawAddedAt.toLongOrNull() ?: System.currentTimeMillis()
+                            else -> System.currentTimeMillis()
+                        }
+                        var url = doc.getString("youtubeUrl") ?: ""
+                        var title = doc.getString("title") ?: "Video Refleksi"
+                        var description = doc.getString("description") ?: ""
+                        var category = doc.getString("category") ?: "Refleksi & Curhat"
+
+                        // Migrate old restricted video IDs if present in Firestore
+                        val oldVid = YouTubeVideo.extractYouTubeVideoId(url)
+                        if (oldVid == "Zhcy2NNQ4m0" || oldVid == "ZQWb5kEVfLU" || oldVid == "T7JGzJuoPAM" || oldVid == "0hFdxi5MY4c") {
+                            val newUrl = when (oldVid) {
+                                "Zhcy2NNQ4m0" -> "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+                                "ZQWb5kEVfLU" -> "https://www.youtube.com/watch?v=inpok4MKVLM"
+                                "T7JGzJuoPAM" -> "https://www.youtube.com/watch?v=2OEL4P1Rz04"
+                                else -> "https://www.youtube.com/watch?v=DWcJFNfaw9c"
+                            }
+                            val newTitle = when (oldVid) {
+                                "Zhcy2NNQ4m0" -> "Musik Lofi & Relaksasi Pikiran 24/7"
+                                "ZQWb5kEVfLU" -> "Meditasi 5 Menit Melepas Penat & Stres"
+                                "T7JGzJuoPAM" -> "Suara Hujan & Ketenangan Batin"
+                                else -> "Panduan Mindfulness & Mencintai Diri"
+                            }
+                            url = newUrl
+                            title = newTitle
+
+                            // Update document in Firestore
+                            doc.reference.update(mapOf("youtubeUrl" to newUrl, "title" to newTitle))
+                        }
+
+                        YouTubeVideo(
+                            id = doc.id,
+                            title = title,
+                            youtubeUrl = url,
+                            description = description,
+                            category = category,
+                            addedAt = addedAtLong
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }.sortedByDescending { it.addedAt }
+
+                trySend(videos)
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    suspend fun addYouTubeVideo(
+        youtubeUrl: String,
+        title: String,
+        description: String = "",
+        category: String = "Refleksi & Curhat"
+    ): Result<Unit> {
+        return try {
+            val docRef = firestore.collection("youtube_videos").document()
+            val map = hashMapOf<String, Any>(
+                "id" to docRef.id,
+                "youtubeUrl" to youtubeUrl.trim(),
+                "title" to title.ifBlank { "Video Refleksi" }.trim(),
+                "description" to description.trim(),
+                "category" to category.ifBlank { "Refleksi & Curhat" }.trim(),
+                "addedAt" to System.currentTimeMillis()
+            )
+            docRef.set(map).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseRepository", "Failed adding youtube video", e)
+            Result.failure(e)
+        }
+    }
+
+    private fun seedDefaultYouTubeVideosIfEmpty() {
+        val defaults = listOf(
+            YouTubeVideo(
+                title = "Musik Lofi & Relaksasi Pikiran 24/7",
+                youtubeUrl = "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+                description = "Lofi & musik tenang untuk menemani waktu santai, curhat, dan meditasi.",
+                category = "Healing Vibes",
+                addedAt = System.currentTimeMillis() - 4000
+            ),
+            YouTubeVideo(
+                title = "Meditasi 5 Menit Melepas Penat & Stres",
+                youtubeUrl = "https://www.youtube.com/watch?v=inpok4MKVLM",
+                description = "Panduan singkat bernapas lega dan menenangkan pikiran lelah.",
+                category = "Self Reflection",
+                addedAt = System.currentTimeMillis() - 3000
+            ),
+            YouTubeVideo(
+                title = "Suara Hujan & Ketenangan Batin",
+                youtubeUrl = "https://www.youtube.com/watch?v=2OEL4P1Rz04",
+                description = "Ambience suara hujan alami untuk relaksasi dan kedamaian hati.",
+                category = "Healing Vibes",
+                addedAt = System.currentTimeMillis() - 2000
+            ),
+            YouTubeVideo(
+                title = "Panduan Mindfulness & Mencintai Diri",
+                youtubeUrl = "https://www.youtube.com/watch?v=DWcJFNfaw9c",
+                description = "Latihan kesadaran penuh untuk menyegarkan hati dan pikiran.",
+                category = "Self Love",
+                addedAt = System.currentTimeMillis() - 1000
+            )
+        )
+
+        defaults.forEach { video ->
+            val docRef = firestore.collection("youtube_videos").document()
+            val map = hashMapOf<String, Any>(
+                "id" to docRef.id,
+                "youtubeUrl" to video.youtubeUrl,
+                "title" to video.title,
+                "description" to video.description,
+                "category" to video.category,
+                "addedAt" to video.addedAt
+            )
+            docRef.set(map)
         }
     }
 }

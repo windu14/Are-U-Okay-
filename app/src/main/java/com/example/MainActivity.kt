@@ -76,6 +76,7 @@ import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.TentangScreen
+import com.example.ui.screens.VideoScreen
 import com.example.ui.screens.WriteCurhatScreen
 import com.example.ui.theme.AreYouOkayTheme
 import com.example.ui.theme.PastelLavender
@@ -233,6 +234,8 @@ fun MainAppScreen(viewModel: JournalViewModel) {
     val isAiThinking by viewModel.isAiThinking.collectAsStateWithLifecycle()
     val aiErrorMessage by viewModel.aiErrorMessage.collectAsStateWithLifecycle()
 
+    val youtubeVideos by viewModel.youtubeVideos.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -323,6 +326,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onOpenAddNote = { onSelectTab(4) },
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
                     onOpenAiChat = { onSelectTab(3) },
+                    onOpenVideoScreen = { onSelectTab(6) },
                     onCommentClick = { note -> viewModel.openCommentsForNote(note) },
                     isLoading = isNotesLoading
                 )
@@ -391,6 +395,14 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                         onBackClick = { onSelectTab(2) }
                     )
                 }
+
+                6 -> VideoScreen(
+                    videos = youtubeVideos,
+                    onBackClick = { onSelectTab(0) },
+                    onAddVideo = { url, title, desc, cat ->
+                        viewModel.addYouTubeVideo(url, title, desc, cat)
+                    }
+                )
             }
 
             // Screen Transition Loading Overlay (1.5 Seconds)

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -217,6 +218,7 @@ fun HomeScreen(
     onOpenAddNote: () -> Unit,
     onOpenMusicSearch: () -> Unit,
     onOpenAiChat: () -> Unit,
+    onOpenVideoScreen: () -> Unit = {},
     onCommentClick: ((JournalNote) -> Unit)? = null,
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
@@ -503,20 +505,98 @@ fun HomeScreen(
                     }
                 }
 
+                // Banner Video Card (Clicks to VideoScreen)
+                Spacer(modifier = Modifier.height(20.dp))
+                Card(
+                    onClick = onOpenVideoScreen,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(130.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Image(
+                            painter = painterResource(id = R.drawable.banner_video),
+                            contentDescription = "Banner Video Curhat",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // Overlay gradient & badge for video banner
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = 0.55f),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                                .padding(16.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Column {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = PastelLavender.copy(alpha = 0.9f)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color(0xFF1E1B28),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            "Video YouTube",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1E1B28)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    "Video Refleksi & Curhat 🎥",
+                                    fontFamily = PlayfairBoldFamily,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    "Inspirasi & Relaksasi dari YouTube",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Banner Kolaborasi Card
                 Spacer(modifier = Modifier.height(20.dp))
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
+                        .height(130.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.banner_kolaborasi),
                         contentDescription = "Banner Kolaborasi",
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
 

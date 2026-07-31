@@ -17,6 +17,7 @@ import com.example.data.remote.GeminiMessage
 import com.example.data.remote.ITunesApiService
 import com.example.data.remote.ITunesTrack
 import com.example.data.remote.UserProfile
+import com.example.data.remote.YouTubeVideo
 import com.example.data.repository.FirebaseRepository
 import com.example.data.repository.JournalRepository
 import com.example.util.GitHubUpdateManager
@@ -131,6 +132,17 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             .sortedByDescending { it.frequency }
             .take(3)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // YouTube Videos StateFlow from Firestore
+    val youtubeVideos: StateFlow<List<YouTubeVideo>> = firebaseRepository.getYouTubeVideosFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun addYouTubeVideo(url: String, title: String, description: String = "", category: String = "Refleksi & Curhat") {
+        if (url.isBlank()) return
+        viewModelScope.launch {
+            firebaseRepository.addYouTubeVideo(url, title, description, category)
+        }
+    }
 
     // Comments State
     private val _activeNoteForComments = MutableStateFlow<JournalNote?>(null)
