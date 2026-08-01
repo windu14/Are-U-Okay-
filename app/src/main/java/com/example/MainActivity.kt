@@ -72,6 +72,7 @@ import com.example.data.remote.UserProfile
 import com.example.ui.components.PlayingAudioWaveAnimation
 import com.example.ui.screens.AiChatScreen
 import com.example.ui.screens.AuthScreen
+import com.example.ui.screens.FotoPostingScreen
 import com.example.ui.screens.FotoScreen
 import com.example.ui.screens.GlobalCurhatScreen
 import com.example.ui.screens.HomeScreen
@@ -344,6 +345,7 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     },
                     onDeleteNoteClick = { id -> viewModel.deleteNote(id) },
                     onOpenAddNote = { onSelectTab(4) },
+                    onOpenPhotoPosting = { onSelectTab(7) },
                     onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
                     onCommentClick = { note -> viewModel.openCommentsForNote(note) },
                     isLoading = isNotesLoading
@@ -404,6 +406,34 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     FotoScreen(
                         currentUsername = uname,
                         onBackClick = { onSelectTab(0) }
+                    )
+                }
+
+                7 -> {
+                    val uname = userProfile?.username ?: currentUser?.displayName ?: "Remaja Ceria"
+                    FotoPostingScreen(
+                        currentUsername = uname,
+                        selectedTrack = selectedTrack,
+                        playerState = playerState,
+                        onOpenMusicSearch = { viewModel.openSearchMusicSheet() },
+                        onRemoveTrack = { viewModel.selectTrackForNote(null) },
+                        onPlayTrackClick = { url, title, artist, art, cardId ->
+                            viewModel.playTrackPreview(url, title, artist, art, cardId)
+                        },
+                        onSavePhotoNote = { caption, category, moodEmoji, pUrl1, pUrl2, track ->
+                            viewModel.addPhotoNote(
+                                caption = caption,
+                                category = category,
+                                moodEmoji = moodEmoji,
+                                photoUrl1 = pUrl1,
+                                photoUrl2 = pUrl2,
+                                trackToAttach = track,
+                                onComplete = { success ->
+                                    // Complete
+                                }
+                            )
+                        },
+                        onBackClick = { onSelectTab(1) }
                     )
                 }
 

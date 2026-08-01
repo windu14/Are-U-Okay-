@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.MusicNote
@@ -124,6 +125,7 @@ fun ExpressiveFabMenu(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onAddNoteClick: () -> Unit,
+    onAddPhotoPostClick: (() -> Unit)? = null,
     onAddMusicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -159,6 +161,14 @@ fun ExpressiveFabMenu(
                 },
                 icon = { Icon(Icons.Filled.Create, contentDescription = "Tulis Curhatan", tint = PastelRose) },
                 text = { Text(text = "Tulis Curhatan", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) }
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    onExpandedChange(false)
+                    onAddPhotoPostClick?.invoke()
+                },
+                icon = { Icon(Icons.Filled.AddPhotoAlternate, contentDescription = "Posting Foto GDrive", tint = PastelLavender) },
+                text = { Text(text = "Posting Foto", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) }
             )
             FloatingActionButtonMenuItem(
                 onClick = {

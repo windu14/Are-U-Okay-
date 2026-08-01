@@ -46,6 +46,7 @@ import com.example.ui.theme.PastelLavender
 
 val GLOBAL_CATEGORIES = listOf(
     "Semuanya",
+    "Foto & Galeri",
     "Asmara & Cinta",
     "Masalah Hidup",
     "Perjalanan Jati Diri",
@@ -61,6 +62,7 @@ fun GlobalCurhatScreen(
     onPlayTrackClick: (previewUrl: String, title: String, artist: String, artworkUrl: String?, cardId: String?) -> Unit,
     onDeleteNoteClick: (Int) -> Unit,
     onOpenAddNote: () -> Unit,
+    onOpenPhotoPosting: (() -> Unit)? = null,
     onOpenMusicSearch: () -> Unit,
     onCommentClick: ((JournalNote) -> Unit)? = null,
     isLoading: Boolean = false,
@@ -248,6 +250,7 @@ fun GlobalCurhatScreen(
             expanded = fabMenuExpanded,
             onExpandedChange = { fabMenuExpanded = it },
             onAddNoteClick = onOpenAddNote,
+            onAddPhotoPostClick = onOpenPhotoPosting,
             onAddMusicClick = onOpenMusicSearch,
             modifier = Modifier
                 .align(Alignment.BottomEnd)

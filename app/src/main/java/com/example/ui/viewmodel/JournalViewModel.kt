@@ -380,6 +380,63 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         addNoteWithTrack(content, category, moodEmoji, _selectedTrack.value)
     }
 
+    fun addPhotoNote(
+        caption: String,
+        category: String,
+        moodEmoji: String,
+        photoUrl1: String,
+        photoUrl2: String? = null,
+        trackToAttach: ITunesTrack? = null,
+        onComplete: (Boolean) -> Unit
+    ) {
+        val user = firebaseRepository.getCurrentUser() ?: currentUser.value
+        val profile = userProfile.value
+        val uid = user?.uid ?: ""
+        val username = profile?.username?.takeIf { it.isNotBlank() }
+            ?: user?.displayName?.takeIf { it.isNotBlank() }
+            ?: "Remaja Ceria"
+
+        val now = System.currentTimeMillis()
+        val newNote = JournalNote(
+            id = (now % Int.MAX_VALUE).toInt(),
+            docId = "",
+            userId = uid,
+            username = username,
+            content = caption,
+            category = category,
+            moodEmoji = moodEmoji,
+            timestamp = now,
+            trackId = trackToAttach?.trackId,
+            trackName = trackToAttach?.trackName,
+            artistName = trackToAttach?.artistName,
+            artworkUrl = trackToAttach?.highResArtworkUrl ?: trackToAttach?.artworkUrl100,
+            previewUrl = trackToAttach?.previewUrl,
+            photoUrl1 = photoUrl1,
+            photoUrl2 = photoUrl2
+        )
+
+        _localCreatedNotes.value = listOf(newNote) + _localCreatedNotes.value
+
+        viewModelScope.launch {
+            val result = firebaseRepository.addNote(
+                content = caption,
+                category = category,
+                moodEmoji = moodEmoji,
+                selectedTrack = trackToAttach,
+                uid = uid,
+                username = username,
+                photoUrl1 = photoUrl1,
+                photoUrl2 = photoUrl2
+            )
+            if (result.isSuccess) {
+                _selectedTrack.value = null
+                onComplete(true)
+            } else {
+                onComplete(false)
+            }
+        }
+    }
+
     fun deleteNote(id: Int) {
         val note = allNotes.value.find { it.id == id } ?: return
         _localCreatedNotes.value = _localCreatedNotes.value.filter { it.id != id }

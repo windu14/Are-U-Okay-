@@ -191,7 +191,9 @@ class FirebaseRepository {
                             trackName = doc.getString("trackName"),
                             artistName = doc.getString("artistName"),
                             artworkUrl = doc.getString("artworkUrl"),
-                            previewUrl = doc.getString("previewUrl")
+                            previewUrl = doc.getString("previewUrl"),
+                            photoUrl1 = doc.getString("photoUrl1"),
+                            photoUrl2 = doc.getString("photoUrl2")
                         )
                     } catch (e: Exception) {
                         android.util.Log.e("FirebaseRepository", "Error parsing doc ${doc.id}", e)
@@ -211,7 +213,9 @@ class FirebaseRepository {
         moodEmoji: String,
         selectedTrack: ITunesTrack?,
         uid: String,
-        username: String
+        username: String,
+        photoUrl1: String? = null,
+        photoUrl2: String? = null
     ): Result<Unit> {
         return try {
             val authUser = auth.currentUser
@@ -232,6 +236,9 @@ class FirebaseRepository {
                 "moodEmoji" to moodEmoji,
                 "timestamp" to System.currentTimeMillis()
             )
+
+            photoUrl1?.let { noteMap["photoUrl1"] = it }
+            photoUrl2?.let { noteMap["photoUrl2"] = it }
 
             if (selectedTrack != null) {
                 noteMap["trackId"] = selectedTrack.trackId

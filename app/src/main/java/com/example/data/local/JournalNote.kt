@@ -22,7 +22,11 @@ data class JournalNote(
     val artistName: String? = null,
     val artworkUrl: String? = null,
     val previewUrl: String? = null,
-    val attachCount: Int = 1
+    val attachCount: Int = 1,
+
+    // Photo attachments from Google Drive (optional)
+    val photoUrl1: String? = null,
+    val photoUrl2: String? = null
 )
 
 data class SongFrequency(
