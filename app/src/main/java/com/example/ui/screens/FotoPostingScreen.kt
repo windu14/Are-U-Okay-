@@ -11,19 +11,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,7 +45,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -53,11 +53,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -68,11 +65,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -84,13 +85,44 @@ import com.example.ui.components.SongCard
 import com.example.ui.theme.PastelLavender
 import com.example.ui.theme.PastelMint
 import com.example.ui.theme.PastelRose
+import com.example.ui.theme.PlayfairBoldFamily
 import com.example.ui.theme.PlayfairRegularFamily
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
+/**
+ * Custom extension to draw dashed ticket style border on photo upload container.
+ */
+fun Modifier.dashedBorder(
+    strokeWidth: Dp = 1.5.dp,
+    color: Color,
+    cornerRadius: Dp = 16.dp,
+    dashLength: Dp = 8.dp,
+    gapLength: Dp = 6.dp
+): Modifier = this.drawWithContent {
+    drawContent()
+    val strokeWidthPx = strokeWidth.toPx()
+    val dashLengthPx = dashLength.toPx()
+    val gapLengthPx = gapLength.toPx()
+    val cornerRadiusPx = cornerRadius.toPx()
+
+    val pathEffect = PathEffect.dashPathEffect(
+        floatArrayOf(dashLengthPx, gapLengthPx), 0f
+    )
+
+    drawRoundRect(
+        color = color,
+        style = Stroke(
+            width = strokeWidthPx,
+            pathEffect = pathEffect
+        ),
+        cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun FotoPostingScreen(
     currentUsername: String,
@@ -120,14 +152,11 @@ fun FotoPostingScreen(
     var isUploading by remember { mutableStateOf(false) }
     var uploadStatusText by remember { mutableStateOf("") }
 
-    // Word count calculations for caption
-    val words = remember(captionText) {
-        captionText.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }
-    }
-    val wordCount = if (captionText.isBlank()) 0 else words.size
-    val isWordLimitExceeded = wordCount > 15
+    val maxCharCount = 50
+    val charCount = captionText.length
+    val isCharLimitExceeded = charCount > maxCharCount
 
-    // Multi Photo Picker Launcher (Max 2 photos)
+    // Multi Photo Picker Launcher (Allows 1 or 2 photos)
     val pickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
@@ -153,46 +182,53 @@ fun FotoPostingScreen(
         "Pendidikan & Sekolah"
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Posting Foto Curhat",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Simpan foto ke Google Drive & bagikan di feed",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
+    Column(
         modifier = modifier
-    ) { innerPadding ->
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Top Navigation Bar (Compact & Precision Top Header like WriteCurhatScreen)
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 4.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Column {
+                    Text(
+                        text = "Posting Foto Curhat 📸",
+                        fontFamily = PlayfairBoldFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PastelLavender
+                    )
+                    Text(
+                        text = "Simpan foto ke Google Drive & bagikan di feed",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
         ) {
             Column(
                 modifier = Modifier
@@ -201,13 +237,13 @@ fun FotoPostingScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                // 1. Banner Tips Maksimal 10MB
+                // 1. Banner Tips Ukuran Foto
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = PastelLavender.copy(alpha = 0.15f)
+                        containerColor = PastelLavender.copy(alpha = 0.12f)
                     ),
-                    border = BorderStroke(1.dp, PastelLavender.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, PastelLavender.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -218,26 +254,26 @@ fun FotoPostingScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(PastelLavender.copy(alpha = 0.3f)),
+                                .background(PastelLavender.copy(alpha = 0.25f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = PastelLavender,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Tips Ukuran Foto",
+                                text = "Tips Unggah Foto",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Ukuran foto maksimal 10MB/file. Maksimal hanya bisa upload 2 foto. Foto akan otomatis disimpan di Google Drive Cloud Admin.",
+                                text = "Kamu bisa mengunggah 1 atau 2 foto (maks 10MB/foto). Foto akan disimpan otomatis di Google Drive Cloud.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 16.sp
@@ -246,7 +282,7 @@ fun FotoPostingScreen(
                     }
                 }
 
-                // 2. Photo Pick & Preview Area
+                // 2. Photo Pick & Ticket Dashed Border Container
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
@@ -277,24 +313,24 @@ fun FotoPostingScreen(
                                 )
                             }
 
-                            // Badge count (e.g. 1/2 foto)
+                            // Badge count (e.g. 1/2 Foto)
                             Surface(
                                 shape = CircleShape,
-                                color = if (selectedUris.size == 2) PastelMint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant
+                                color = if (selectedUris.isNotEmpty()) PastelMint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Text(
                                     text = "${selectedUris.size}/2 Foto",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (selectedUris.size == 2) PastelMint else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (selectedUris.isNotEmpty()) PastelMint else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                        // Photo Thumbnails Row
+                        // Photo Thumbnails / Dashed Ticket Picker Box
                         if (selectedUris.isNotEmpty()) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -306,7 +342,11 @@ fun FotoPostingScreen(
                                             .weight(1f)
                                             .aspectRatio(4f / 3f)
                                             .clip(RoundedCornerShape(14.dp))
-                                            .border(1.dp, PastelLavender.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                                            .dashedBorder(
+                                                strokeWidth = 1.5.dp,
+                                                color = PastelLavender.copy(alpha = 0.7f),
+                                                cornerRadius = 14.dp
+                                            )
                                     ) {
                                         AsyncImage(
                                             model = ImageRequest.Builder(context)
@@ -318,32 +358,15 @@ fun FotoPostingScreen(
                                             modifier = Modifier.fillMaxSize()
                                         )
 
-                                        // Badge Index
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = Color.Black.copy(alpha = 0.65f),
-                                            modifier = Modifier
-                                                .align(Alignment.TopStart)
-                                                .padding(6.dp)
-                                        ) {
-                                            Text(
-                                                text = "Foto ${index + 1}",
-                                                color = Color.White,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-
                                         // Remove Button
                                         IconButton(
                                             onClick = { selectedUris.removeAt(index) },
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
-                                                .padding(4.dp)
+                                                .padding(6.dp)
                                                 .size(28.dp)
                                                 .clip(CircleShape)
-                                                .background(Color.Black.copy(alpha = 0.6f))
+                                                .background(Color.Black.copy(alpha = 0.65f))
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
@@ -355,15 +378,19 @@ fun FotoPostingScreen(
                                     }
                                 }
 
-                                // Placeholder slot if only 1 photo selected
+                                // Placeholder slot if only 1 photo is selected
                                 if (selectedUris.size == 1) {
                                     Box(
                                         modifier = Modifier
                                             .weight(1f)
                                             .aspectRatio(4f / 3f)
                                             .clip(RoundedCornerShape(14.dp))
-                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                            .dashedBorder(
+                                                strokeWidth = 1.5.dp,
+                                                color = PastelLavender.copy(alpha = 0.6f),
+                                                cornerRadius = 14.dp
+                                            )
                                             .clickable { pickerLauncher.launch("image/*") },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -372,12 +399,13 @@ fun FotoPostingScreen(
                                                 imageVector = Icons.Default.AddPhotoAlternate,
                                                 contentDescription = null,
                                                 tint = PastelLavender,
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(26.dp)
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = "+ Foto ke-2",
                                                 style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
@@ -385,16 +413,17 @@ fun FotoPostingScreen(
                                 }
                             }
                         } else {
-                            // Empty Pick Box
+                            // Empty Dashed Ticket Pick Box
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(130.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                                    .border(
-                                        BorderStroke(1.5.dp, PastelLavender.copy(alpha = 0.6f)),
-                                        shape = RoundedCornerShape(14.dp)
+                                    .height(125.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                    .dashedBorder(
+                                        strokeWidth = 1.5.dp,
+                                        color = PastelLavender.copy(alpha = 0.7f),
+                                        cornerRadius = 16.dp
                                     )
                                     .clickable { pickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
@@ -408,13 +437,13 @@ fun FotoPostingScreen(
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = "Pilih Foto dari Galeri (Maks 2 Foto)",
+                                        text = "Pilih 1 atau 2 Foto dari Galeri",
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Tips: Maksimal 10MB per foto",
+                                        text = "Sentuh di sini untuk memilih foto",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp
@@ -427,10 +456,10 @@ fun FotoPostingScreen(
                             Spacer(modifier = Modifier.height(10.dp))
                             Button(
                                 onClick = { pickerLauncher.launch("image/*") },
-                                colors = ButtonDefaults.buttonColors(containerColor = PastelLavender.copy(alpha = 0.2f)),
+                                colors = ButtonDefaults.buttonColors(containerColor = PastelLavender.copy(alpha = 0.18f)),
                                 border = BorderStroke(1.dp, PastelLavender.copy(alpha = 0.5f)),
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AddPhotoAlternate,
@@ -439,13 +468,17 @@ fun FotoPostingScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Tambah Foto ke-2", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Tambah Foto ke-2 (Opsional)",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
                 }
 
-                // 3. Caption Field (Maximum 15 words)
+                // 3. Caption Field (Maximum 50 letters/characters)
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
@@ -467,16 +500,16 @@ fun FotoPostingScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
-                            // Word Limit Counter
+                            // 50 Character Limit Counter Badge
                             Surface(
                                 shape = CircleShape,
-                                color = if (isWordLimitExceeded) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
+                                color = if (isCharLimitExceeded) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Text(
-                                    text = "$wordCount / 15 kata",
+                                    text = "$charCount / $maxCharCount huruf",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isWordLimitExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (isCharLimitExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
@@ -486,29 +519,33 @@ fun FotoPostingScreen(
 
                         OutlinedTextField(
                             value = captionText,
-                            onValueChange = { captionText = it },
+                            onValueChange = { input ->
+                                if (input.length <= maxCharCount) {
+                                    captionText = input
+                                }
+                            },
                             placeholder = {
                                 Text(
-                                    "Tuliskan caption singkat untuk foto ini...",
+                                    "Tuliskan caption singkat (maksimal 50 huruf)...",
                                     fontFamily = PlayfairRegularFamily,
                                     fontSize = 14.sp
                                 )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp),
+                                .height(95.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isWordLimitExceeded) MaterialTheme.colorScheme.error else PastelLavender,
-                                unfocusedBorderColor = if (isWordLimitExceeded) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
+                                focusedBorderColor = if (isCharLimitExceeded) MaterialTheme.colorScheme.error else PastelLavender,
+                                unfocusedBorderColor = if (isCharLimitExceeded) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
                             ),
-                            isError = isWordLimitExceeded
+                            isError = isCharLimitExceeded
                         )
 
-                        if (isWordLimitExceeded) {
+                        if (isCharLimitExceeded) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "⚠️ Caption terlalu panjang! Maksimal hanya 15 kata.",
+                                text = "⚠️ Caption terlalu panjang! Maksimal $maxCharCount huruf.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
@@ -650,12 +687,12 @@ fun FotoPostingScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // 6. Submit Post Button
+                // 6. Submit Post Button (Spacious, High Precision, Un-truncated)
                 val isSubmitEnabled = selectedUris.isNotEmpty() &&
                         captionText.isNotBlank() &&
-                        !isWordLimitExceeded &&
+                        captionText.length <= maxCharCount &&
                         !isUploading
 
                 Button(
@@ -668,8 +705,8 @@ fun FotoPostingScreen(
                             Toast.makeText(context, "Masukkan caption foto terlebih dahulu!", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        if (isWordLimitExceeded) {
-                            Toast.makeText(context, "Caption tidak boleh lebih dari 15 kata!", Toast.LENGTH_SHORT).show()
+                        if (isCharLimitExceeded) {
+                            Toast.makeText(context, "Caption tidak boleh lebih dari 50 huruf!", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
@@ -740,29 +777,36 @@ fun FotoPostingScreen(
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp)
+                        .heightIn(min = 54.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CloudUpload,
-                        contentDescription = null,
-                        tint = if (isSubmitEnabled) Color(0xFF261833) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Unggah & Post Ke Global Curhat",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = if (isSubmitEnabled) Color(0xFF261833) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudUpload,
+                            contentDescription = null,
+                            tint = if (isSubmitEnabled) Color(0xFF261833) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Unggah & Post ke Global Curhat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = if (isSubmitEnabled) Color(0xFF261833) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(48.dp))
             }
 
             // Expressive Upload Loading Overlay
-            AnimatedVisibility(visible = isUploading) {
+            if (isUploading) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.85f),
                     modifier = Modifier.fillMaxSize()

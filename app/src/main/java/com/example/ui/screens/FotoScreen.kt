@@ -478,19 +478,6 @@ fun FotoScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = PastelRose.copy(alpha = 0.25f)
-                            ) {
-                                Text(
-                                    text = "Eksperimental",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PastelRose,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
                         }
                         Text(
                             text = "Tersimpan di Google Drive Cloud Admin",
@@ -869,6 +856,24 @@ fun PhotoCardItem(
                         }
                     }
                 )
+
+                // 'diposting' Badge for photos posted from curhat
+                if (photo.name.contains("curhat", ignoreCase = true)) {
+                    Surface(
+                        shape = RoundedCornerShape(bottomStart = 10.dp),
+                        color = PastelLavender,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                    ) {
+                        Text(
+                            text = "diposting",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E1B28),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
             }
 
             // Clean Card Metadata (User Account + Date Time, NO raw filename)

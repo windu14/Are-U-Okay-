@@ -321,7 +321,7 @@ fun NoteCard(
                                                 Text("Memuat...", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         },
-                                        error = {
+                                         error = {
                                             Icon(
                                                 Icons.Default.ImageNotSupported,
                                                 contentDescription = null,
@@ -329,22 +329,6 @@ fun NoteCard(
                                             )
                                         }
                                     )
-
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color.Black.copy(alpha = 0.65f),
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "Foto ${index + 1}/2",
-                                            color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
                                 }
                             }
                         }

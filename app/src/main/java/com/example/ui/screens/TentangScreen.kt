@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -377,6 +378,57 @@ fun TentangScreen(
                         }
                     }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Catatan Pembaruan (v2.0.0): ✨",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = PastelLavender.copy(alpha = 0.12f)
+            ),
+            border = BorderStroke(1.dp, PastelLavender.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "📸 Posting Foto Curhat ke Cloud",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "• Unggah 1 atau 2 foto langsung ke Google Drive Cloud Admin.\n• Desain tiket upload garis putus-putus presisi.\n• Caption singkat fleksibel maks 50 huruf.\n• Badge 'diposting' khusus di galeri foto.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "🎵 Attach Musik & UI Refinement",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "• Attach lagu favorit dari iTunes tanpa berpindah layar.\n• Pembersihan badge pada card foto feed agar tampilan lebih bersih.\n• Header dan tombol aksi diatur presisi tanpa terpotong.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
             }
         }
 

@@ -459,7 +459,9 @@ fun MainAppScreen(viewModel: JournalViewModel) {
                     onSelectTrack = { track ->
                         viewModel.selectTrackForNote(track)
                         viewModel.dismissSearchMusicSheet()
-                        onSelectTab(4)
+                        if (selectedTab != 7) {
+                            onSelectTab(4)
+                        }
                     },
                     onDismiss = { viewModel.dismissSearchMusicSheet() }
                 )
